@@ -84,10 +84,13 @@ class SSEncoder(BaseEstimator):
             updates.append((p, p - lr * g))
         return updates
 
-    def fit(self, X, y):
+    def fit(self, X_rest, X_task, y):
         self.penalty_l1 = 0.5
         self.penalty_l2 = 0.5
         DEBUG_FLAG = True
+        
+        X = X_rest
+        y = y[:X.shape[0]]
 
         # self.max_epochs = 333
         self.batch_size = 100
@@ -125,6 +128,7 @@ class SSEncoder(BaseEstimator):
             self.dbg_acc_train_ = []
             self.dbg_acc_val_ = []
 
+        # computation graph: auto-encoder
         bW0_vals = np.zeros(self.n_hidden).astype(np.float32)
         self.bW0s = theano.shared(value=bW0_vals, name='bW0')
         bW1_vals = np.zeros(n_output).astype(np.float32)
@@ -137,16 +141,13 @@ class SSEncoder(BaseEstimator):
 
         encoding = (self.input_data.dot(self.W0s) + self.bW0s).dot(self.W1s) + self.bW1s
 
-        # auto-encoder loss
         self.ae_loss = T.sum((self.input_data - encoding) ** 2, axis=1)
 
-        # overall cost expression
         self.cost = (T.mean(self.ae_loss) +
                      T.mean(abs(self.W0s).sum(axis=1) * self.penalty_l1) +
                      T.mean((self.W0s ** 2).sum(axis=1) * self.penalty_l2)
         )
 
-        # cost expression
         params = [self.W0s, self.bW0s, self.bW1s]
         gparams = [T.grad(cost=self.cost, wrt=param) for param in params]
 
@@ -154,15 +155,19 @@ class SSEncoder(BaseEstimator):
         updates = self.RMSprop(cost=self.cost, params=params,
                                lr=self.learning_rate)
 
-        f_train = theano.function(
+        f_train_ae = theano.function(
             [index],
             [self.cost],
             givens=givens_tr,
             updates=updates)
 
-        self.cost_history_ = []
+        # computation graph: logistic regression
+
+
+        # optimization loop
+        self.ae_cost_history_ = []
         start_time = time.time()
-        last_cost = np.inf
+        ae_last_cost = np.inf
         no_improve_steps = 0
         for i_epoch in range(self.max_epochs):
             if i_epoch == 1:
@@ -170,22 +175,25 @@ class SSEncoder(BaseEstimator):
                 total_mins = (epoch_dur * self.max_epochs) / 60
                 hs, mins = divmod(total_mins, 60)
                 print("Max estimated duration: %i hours and %i minutes" % (hs, mins))
-            epoch_costs = []
+            ae_epoch_costs = []
             for i in range(n_train_samples // self.batch_size):
-                cur_cost = f_train(i)
-                epoch_costs.append(cur_cost)
-                self.cost_history_.append(cur_cost)
-                
-            # evaluate epoch cost
-            if last_cost - cur_cost[0] < 0.1:
-                no_improve_steps += 1
-            else:
-                last_cost = cur_cost
-                no_improve_steps = 0
-            print('E:%i, cost:%.4f, badsteps:%i' % (
-                i_epoch + 1, cur_cost[0], no_improve_steps))
-            if no_improve_steps > 100:
-                break  # max iter reached
+                    ae_cur_cost = f_train_ae(i)
+
+            if True:  # auto-encoder
+                # evaluate epoch cost
+                if ae_last_cost - ae_cur_cost[0] < 0.1:
+                    no_improve_steps += 1
+                else:
+                    ae_last_cost = ae_cur_cost
+                    no_improve_steps = 0
+                print('E:%i, cost:%.4f, badsteps:%i' % (
+                    i_epoch + 1, ae_cur_cost[0], no_improve_steps))
+
+            ae_epoch_costs.append(ae_cur_cost)
+            self.ae_cost_history_.append(ae_cur_cost)
+
+            # if no_improve_steps > 100:
+            #     break  # max iter reached
 
         total_mins = (time.time() - start_time) / 60
         hs, mins = divmod(total_mins, 60)
@@ -220,14 +228,14 @@ def dump_comps(masker, compressor, components, threshold=2):
                       cut_coords=(0, -2, 0), draw_cross=False,
                       output_file=path_mask + 'zmap.png')
 
-n_comp = 5
+n_comp = 20
 estimator = SSEncoder(
     n_hidden=n_comp,
     gain1=0.004,  # empirically determined by CV
     learning_rate = np.float32(0.00001),  # empirically determined by CV,
     max_epochs=5000)
 
-estimator.fit(X_task, labels)
+estimator.fit(X_rest, X_task, labels)
 comps = estimator.W0s.get_value().T
 
 dump_comps(nifti_masker, 'AE_n5', comps, threshold=0.1)
