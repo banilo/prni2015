@@ -24,7 +24,7 @@ import joblib
 
 import dnn
 
-WRITE_DIR = op.join(os.getcwd(), 'prni2015_2')
+WRITE_DIR = op.join(os.getcwd(), '10comps')
 if not op.exists(WRITE_DIR):
     os.mkdir(WRITE_DIR)
 
@@ -32,7 +32,9 @@ if not op.exists(WRITE_DIR):
 # load+preprocess data
 ##############################################################################
 
-mask_img = nib.load('grey10_icbm_5mm_bin.nii.gz')
+# mask_img = nib.load('grey10_icbm_5mm_bin.nii.gz')
+mask_img='/git/dl_nets/grey10_icbm_10mm_ero2_bin.nii.gz'
+
 # mask_img = nib.load('grey10_icbm.nii')
 nifti_masker = NiftiMasker(mask_img=mask_img, smoothing_fwhm=False,
                            standardize=False)
@@ -40,7 +42,9 @@ nifti_masker.fit()
 mask_nvox = nifti_masker.mask_img_.get_data().sum()
 
 print('Loading data...')
-X, labels, subs = joblib.load('/git/dl_nets/preload_HT')
+
+# X, labels, subs = joblib.load('/git/dl_nets/preload_HT')
+X, labels, subs = joblib.load('/git/dl_nets/preload_HT_10mm_ero2')
 
 # X1 = joblib.load('/git/cohort/archi/preload_1st_HT')
 # labels1 = joblib.load('/git/cohort/archi/preload_1st_HT_labels')
@@ -122,8 +126,9 @@ accs_NN = []
 accs_ICA = []
 accs_PCA = []
 accs_SPCA = []
+
+n_comps = [10]
 # n_comps = [1, 5] + list(np.arange(10, 101)[::10])
-n_comps = [5]
 for n_comp in n_comps:
     print('#' * 80)
     print('#components: %i' % n_comp)
@@ -132,6 +137,7 @@ for n_comp in n_comps:
         layers_types=[dnn.Linear, dnn.LogisticRegression],
         layers_sizes=[n_comp],
         L1_reg=0.1, L2_reg=0.1,
+        # dropout_rates=[float32(0.2), float32(0.5],
         debugprint=1)
     
     clf.fit(x_train=train_set_x, y_train=train_set_y, max_epochs=250, split_ratio=0.1,
@@ -140,7 +146,7 @@ for n_comp in n_comps:
     accs_NN.append(acc_NN)
     print('NN: %.4f' % acc_NN)
     first_hidden_layer = clf.params[0].get_value().T
-    dump_comps(nifti_masker, None, first_hidden_layer, 2.)
+    dump_comps(nifti_masker, None, first_hidden_layer, 0.66)
 
 
     # 2-step approach: PCA
@@ -162,7 +168,7 @@ for n_comp in n_comps:
     acc_PCA = np.mean(y_pred == test_set_y)
     print('PCA: %.4f' % acc_PCA)
     accs_PCA.append(acc_PCA)
-    dump_comps(nifti_masker, compressor, compressor.components_, 2.)
+    dump_comps(nifti_masker, compressor, compressor.components_, 0.66)
     
     # 2-step approach: ICA
     half1_X, half2_X, half1_y, half2_y = train_test_split(
@@ -180,7 +186,7 @@ for n_comp in n_comps:
     acc_ICA = np.mean(y_pred == test_set_y)
     print('ICA: %.4f' % acc_ICA)
     accs_ICA.append(acc_ICA)
-    dump_comps(nifti_masker, compressor, compressor.components_, 2.)
+    dump_comps(nifti_masker, compressor, compressor.components_, 0.66)
 
     # 2-step approach: Sparse PCA
     half1_X, half2_X, half1_y, half2_y = train_test_split(
@@ -199,9 +205,8 @@ for n_comp in n_comps:
     acc_SPCA = np.mean(y_pred == test_set_y)
     print('SPCA: %.4f' % acc_SPCA)
     accs_SPCA.append(acc_SPCA)
-    dump_comps(nifti_masker, compressor, compressor.components_, 2.)
+    dump_comps(nifti_masker, compressor, compressor.components_, 0.66)
 
-stop
 joblib.dump(n_comps, 'n_comps2')
 joblib.dump(accs_NN, 'accs2_NN_5mm')
 joblib.dump(accs_PCA, 'accs2_PCA_5mm')
@@ -242,9 +247,9 @@ for bin in np.arange(len(n_comps)):
                 label='Low-rank logistic')
         cur_bin += b_width
         
-        # plt.bar(cur_bin, scores_PCA[bin], width=b_width, color=my_colors[0],
-        #         label='PCA')
-        # cur_bin += b_width
+        plt.bar(cur_bin, scores_PCA[bin], width=b_width, color=my_colors[0],
+                label='PCA')
+        cur_bin += b_width
 
         plt.bar(cur_bin, scores_ICA[bin], width=b_width, color=my_colors[1],
                 label='FastICA')
@@ -254,13 +259,12 @@ for bin in np.arange(len(n_comps)):
                 label='SparsePCA')
         cur_bin += b_width
 
-
     else:
         plt.bar(cur_bin, scores_NN[bin], width=b_width, color=my_colors[-1])
         cur_bin += b_width
-        
-        # plt.bar(cur_bin, scores_PCA[bin], width=b_width, color=my_colors[0])
-        # cur_bin += b_width
+
+        plt.bar(cur_bin, scores_PCA[bin], width=b_width, color=my_colors[0])
+        cur_bin += b_width
 
         plt.bar(cur_bin, scores_ICA[bin], width=b_width, color=my_colors[1])
         cur_bin += b_width
@@ -271,9 +275,11 @@ for bin in np.arange(len(n_comps)):
     cur_bin += b_width
 
 plt.legend(loc='lower right', fontsize=12)
-plt.savefig('nn_versus_decomp_5mm_2.png', DPI=200)
+plt.savefig('10_nn_versus_decomp_10mm_2.png', DPI=200)
 plt.tight_layout()
-plt.savefig('nn_versus_decomp_5mm_2.png', DPI=200)
+plt.savefig('10_nn_versus_decomp_10mm_2.png', DPI=200)
+
+stoppy
 
 # for n_comp in n_comps:
 #     print('#' * 80)

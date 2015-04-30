@@ -64,6 +64,54 @@ class Linear(object):
     def __repr__(self):
         return "Linear"
 
+class CorruptedLinear(object):
+    def get_corrupted_input(self, input):
+          """ This function keeps ``1-corruption_level`` entries of the inputs the same
+          and zero-out randomly selected subset of size ``coruption_level``
+          Note : first argument of theano.rng.binomial is the shape(size) of
+                 random numbers that it should produce
+                 second argument is the number of trials
+                 third argument is the probability of success of any trial
+
+                  this will produce an array of 0s and 1s where 1 has a probability of
+                  1 - ``corruption_level`` and 0 with ``corruption_level``
+          """
+          numpy_rng = numpy.random.RandomState(42)
+          theano_rng = RandomStreams(numpy_rng.randint(2 ** 30))
+          print('Warning: corrupting input with %.2f' % self.corr_level)
+          tilde_x = theano_rng.binomial(
+              size=input.shape, n=numpy.float32(1),
+              p=numpy.float32(1 - self.corr_level),
+              dtype='float32') * input
+          return tilde_x
+
+    def __init__(self, rng, input, n_in, n_out, W=None, b=None):
+        if W is None:
+            W_values = numpy.asarray(rng.uniform(
+                low=-numpy.sqrt(6. / (n_in + n_out)),
+                high=numpy.sqrt(6. / (n_in + n_out)),
+                size=(n_in, n_out)), dtype=theano.config.floatX)
+            W_values *= 4  # This works for sigmoid activated networks!
+            W = theano.shared(value=W_values, name='W', borrow=True)
+        else:
+            print('W already set !!!')
+        if b is None:
+            b = build_shared_zeros((n_out,), 'b')
+        self.input = input
+        self.W = W
+        self.b = b
+        self.params = [self.W, self.b]
+        self.corr_level = 0.3
+
+        self.output = T.dot(self.get_corrupted_input(self.input), self.W) + self.b
+        
+    def set_corr_level(self, corr):
+        self.corr_level = corr
+        self.output = T.dot(self.get_corrupted_input(self.input), self.W) + self.b
+        
+    def __repr__(self):
+        return "CorruptedLinear"
+
 
 # class PretrainedLinear(object):
 #     """ Basic linear transformation layer (W.X + b) """
@@ -426,7 +474,8 @@ class NeuralNet(object):
                                            theano.Param(learning_rate)],
                                    outputs=self.mean_cost,
                                    updates=updates,
-                                   givens={self.x: batch_x, self.y: batch_y})
+                                   givens={self.x: batch_x, self.y: batch_y},
+                                   allow_input_downcast=True)
 
         return train_fn
 
