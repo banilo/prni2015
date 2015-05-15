@@ -1,0 +1,549 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{nips14submit_e,times}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{amsmath,amsfonts,amsthm}
+\usepackage{bbm}
+\usepackage{algorithm,algorithmic}
+\usepackage{graphicx}
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage[titletoc]{appendix}
+
+\def\B#1{\bm{#1}}
+%\def\B#1{\mathbf{#1}}
+\def\trans{\mathsf{T}}
+
+%\renewcommand{\labelitemi}{--}
+
+\newtheorem{theorem}{Theorem} \newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}{Remark}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{Semi-supervised low-rank logistic regression for
+high-dimensional neuroimaging datasets}
+
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+\DeclareMathOperator{\proj}{proj}
+\DeclareMathOperator{\soft}{soft}
+\DeclareMathOperator{\prox}{prox}
+\DeclareMathOperator{\Prox}{Prox}
+\DeclareMathOperator{\im}{im}
+
+% macros from michael's .tex
+\DeclareMathOperator{\dist}{dist} % The distance.
+\DeclareMathOperator{\argmin}{argmin}
+\DeclareMathOperator{\argmax}{argmax}
+\DeclareMathOperator{\Id}{Id}
+\DeclareMathOperator{\abs}{abs}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{cor}[thm]{Corollary}
+
+
+%\nipsfinalcopy % Uncomment for camera-ready version
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+
+\maketitle
+
+\author{Danilo Bzdok, Michael Eickenberg, Bertrand Thirion, Ga\"el
+  Varoquaux \\\\\textbf{\textit{email:} }firstname.lastname@inria.fr}
+
+\begin{abstract}
+Imaging neuroscience links human behavior to aspects of brain
+biology in ever-increasing datasets.
+%
+Existing neuroimaging methods typically perform either discovery of
+neurobiological structure or evaluate targeted hypotheses on mental tasks.
+%
+Modelling mental operations however hinges
+on the pertinence of the assumed neurobiological structure.
+%
+We therefore propose to the solve the unsupervised dimensionality reduction
+and supervised task classification in
+an identical statistical learning problem.
+%
+We show that this approach yields more accurate and more interpretable
+neural models of psychological tasks in a reference neuroimaging dataset.
+%
+
+\textbf{keywords}: dimensionality reduction; semi-supervised learning
+bioinformatics; fMRI; systems neuroscience
+
+\end{abstract}
+
+
+\section{Introduction}
+%
+Methods used in neuroimaging research can be grouped by discovering
+neurobiological structure or revealing the neural correlates associated
+with mental tasks.
+To discover coherent distributions of activation structure across time,
+independent component analysis (ICA; \cite{beckmann2005}) is often used
+to decompose the BOLD (blood-oxygen level-dependent) signals into the
+important modes of variation.
+The ensuing spatial activation patterns are believed to represent
+brain networks of
+functionally interaction brain regions.
+Similarly, sparse PCA (SPCA; \cite{varoqu2011}) has been used to
+separate brain activity signals into parsimonious network components.
+Thus extracted brain networks have been shown to be
+manifestations of electrophysiological oscillation structure \cite{hipp15}.
+Their fundamental role is
+attested by continued covariation during sleep and anesthesia.
+%
+Network discovery is typically performed by applying ICA or SPCA on
+unlabeled "resting-state" data. These capture brain dynamics
+during ongoing random thought without controlled environmental input.
+The rationale is that the biggest fraction of BOLD signals do
+not correlate with a particular behavior, stimulus, or experimental task. 
+
+\linebreak
+
+On the other hand, to investigate
+the neural correlates underlying mental tasks,
+the general linear model (GLM; \cite{friston94}) is the dominant approach.
+The contribution of
+individual brain voxels is estimated
+according to a design matrix of experimental tasks.
+Alternatively, psychophysiological interactions (PPI; \cite{friston97}),
+elucidate the functional interactions between voxels as a function
+of experimental tasks.
+Dynamic causal modeling (DCM; \cite{stephan04}), in turn, quantifies directed,
+task-driven influences between regions
+by treating the brain as a nonlinear dynamic system with unknown
+neuronal states. As a last example, always more neuroimaging studies model
+experimental tasks by training classification algorithms on brain signals
+\cite{poldrack09decoding}.
+All these methods are applied to labeled task data that capture brain dynamics
+during stimulus-guided behavior.
+Two important conclusions can be drawn.
+First, the mentioned supervised neuroimaging analyses operate
+without exception in a single-voxel space. This ignores the fact that the BOLD
+signal contains coherent spatial activation patterns.
+Second, existing neuroimaging analyses do not acknowledge the fact that the
+task-induced changes of the BOLD signal amount to less than 5\%
+of baseline activity \cite{fox07}. They do thus not exploit the high similarity
+of BOLD dynamics of the human brain during experimental tasks and at rest.
+Indeed, similar brain networks were observed when applying ICA on
+large quantities of
+rest and task data \cite{smith2009}.
+
+\linebreak
+
+Both aspects can be combined into a 
+semi-supervised (i.e., use task and rest data)
+low-rank (i.e., perform network decomposition)
+approach for neuroimaging analyses.
+
+
+
+Yet, special interest lies in the data-driven
+discovery of neurobiological structure that explains differences
+in cognitive conditions. Integrating unsupervised discovery and
+supervised classification should preferentially identify
+neurobiological structure that allows for the best predictive models. We
+propose such an approach based on conjoint gradient-descent to optimize
+linear decomposition and multi-task disambiguation.
+
+Find the most discriminative linear combination of the main direction of
+variation in the data
+
+
+modes of variation in the brain and the neural correlates of mental
+operations have mostly been studied separately so far
+their correspondence remains largely unclear
+
+we provide principled computational framework to link these previously
+unconnected domains of study.
+
+learn a manifold / low-dimensional coordinate system
+motivates
+
+
+There is much uncertainty about the most pertinent representation
+of neural activation information
+
+PCA, SPCA and ICA are produce compact representations of uncorrelated or
+independent components
+
+combine exploratory and confirmatory analysis steps in a single framework
+allows for  overlapping response pattersn
+
+adjust the weight assigned to each spatial pattern to maximize
+discriminatory power
+
+useful intermediate representation
+
+integrate recently gained domain knowledge into statistical learning
+problems.
+
+Traditionally, dimensionality reduction depended on linear methods such as PCA
+Autoencoder \cite{hinton06}:
+one-layered learning model that computes distributed
+representation from the inputs by improving reconstructions from them.
+dimensionality reduction by learning the underlying manifolds
+for efficient representation of the data
+bottleneck
+-> use AE als feature extractions
+guide the estimator where to put probability mass in the inputs
+AE is a common feature learning algorithm
+if hidden layer linear and squared error loss, it behaves like a PCA \cite{baldi1989neural}
+convex with unique global minimum
+optimization objective is the same as for PCA
+
+Most nonsupervised learning algorithms can be implemented as variants in the 
+autoencoder framework. This includes decmoposition and clustering task
+
+
+Linear autoencoders with tied weights and specific regularization terms
+yield efficient algorithms for ICA / nonlinearity -> then closer to feed-forward neural network
+\cite{le2011ica}
+
+ICA, Sparse autoencoders, and sparse coding are mathematically equivalent
+under mild conditions \cite{le2011ica}
+
+AE can caputer global and local distribution
+
+and SPCA (??).
+-> an autoencoder can capture various different compression procedures
+
+- reformulate the AE prbleme as a regularization boejctive
+
+-> backpropagation: solve the unsupervised ata repsentation and supervised
+problem in an identical process.
+coompute the error derivates of the weights
+-> gradually modified according to possible compression algorithms
+
+without a-priori knowledge of the structure
+affine transformation to compression information in the input
+class of problems
+architecture
+statistical models
+
+directions of greatest variance; represents each data point by its coordinates along each of these directions
+
+LR:
+these weights are then fine-tuned by the LR
+
+Even if linear should scan a wide space of intersring model, since
+theoretcially, a two-layered neural networks can learn almost any function.
+
+learn to the optimal projection of the input data
+into the main direction of variation and
+then classify along these principal directions.
+Vincent2010: it has been shown experimen- tally that
+beginning by optimizing an unsupervised criterion, oblivious of the specific
+classification problem, can actually greatly help in eventually achieving
+superior performance for that classifica- tion problem.
+
+among the models it will favor those that feature most neurobiological
+pertinence
+
+From the perspective of dictionary learning, the first layer can be
+viewed as a set of basis functions whose linear combinations are learned
+in the second layer \cite{olshausen96}.
+
+project the data-generating process on the axes of main variation
+autoencoder allows to reverse-engineer proerties of the data-generating
+neural process \cite{olshausen96}.
+
+learn complex properties of the brain's task response patterns
+
+convert high-dimensional data to low-dimensional network codes
+
+data should be more easily separable in the network spacew
+low-dimensional, linear structure
+
+equates with a shallow neural network without non-linearities
+
+
+
+
+
+
+%
+\section{Methods}
+%
+Using
+Human Connectome Project (HCP) data (n=500), optimal low-rank projections and
+logistic-regression models are identified in a same gradient descent. Brain
+network decompositions are thus exposed that explain task-descriminative spatial
+patterns.
+
+Data was drawn from 498 unrelated, healthy HCP participants.
+All provided informed consent to the Washington
+University in St. Louis institutional review board. HCP tasks 
+were selected that feature known suitability as localizers
+and reliability
+across participants \cite{barch2013}.
+Mostly block-design, but also event-related, paradigms were
+administered on 1) working memory/cognitive control processing, 2)
+incentive processing, 3) visual and somatosensory-motor processing,
+4) language processing (semantic and phonological processing),
+5) social cognition, 6) relational processing, and 7) emotional
+processing. All data were acquired on the same Siemens Skyra 3T scanner.
+Whole-brain EPI acquisitions were acquired with a
+32 channel head coil (TR=720ms, TE=33.1ms, flip angle=52°, BW=2290Hz/Px,
+in-plane FOV=$280\times180$mm, 72 slices, 2.0mm isotropic voxels).
+The “minimally preprocessed” pipeline \cite{glass13} includes
+gradient unwarping, motion correction, fieldmap-based EPI distortion
+correction, brain-boundary-based registration of EPI to structural
+T1-weighted scan, non-linear (FNIRT) registration into MNI space,
+and grand-mean intensity normalization. Activation maps were spatially
+smoothed by a Gaussian kernel of 4mm (FWHM). A general linear model (GLM) was
+implemented by FILM from the FSL suite with model regressors from convolution
+with a “canonical” hemodynamic response function and from temporal derivatives.
+HCP tasks were conceived to modulate activation
+in a maximum of different brain regions and neural systems. Indeed, at
+least 70\% of the participants showed consistent brain activity in
+contrasts from the task battery, which certifies excellent
+coverage \cite{barch2013}.
+In sum, the HCP task dataset incorporated 8650 first-level activity maps
+from 18 diverse paradigms administered to 498 participants.
+All maps were downsampled to a common 36x43x36 space of
+5mm isotropic voxels and gray-matter masked (at least 10\%).
+All analyses were based on task maps of
+13,657 voxels representing Z values in gray matter.
+\linebreak
+
+Unsupervised and supervised learning were combined into a low-rank logistic
+regression problem. The 13,657 z values from each activity map were
+subject to a first linear
+projection into Z latent components (i.e., 1, 5, 10, .., 100).
+These hidden brain networks
+loadings were subsequently projected into the 18 class space for multinomial
+logistic regression. The goal was to find the two weight matrices
+(input-to-hidden: 13,657 x Z and hidden-to-output: Z x 18) and their
+corresponding bias vectors. Non-linearities were not applied on the
+transformation results. Weights and biases were initialized by Gaussian
+random noise. Gradient descent updated these matrices and vectors in each
+iteration (100 samples per batch, 250 epochs). Using the chain rule, the
+partial
+derivates for the update were computed for the transformation into the
+latent space and the subsequent transformation into the class space. We choose
+the RMSprop algorithm \cite{dauphin15} with an initial learning rate of
+0.01. Early stopping ensured that the best weight matrices/vectors were
+retained in each epoch cycle. This was evaluated by the prediction
+accuracy on a validation set (10\% of the training data) at each iteration.
+\linebreak
+
+This approach was benchmarked against independent dimensionality reduction and
+learning of a classification function. Data reduction was performed on one
+half of the data by ICA and SPCA.
+ICA unmixed the
+BOLD signals into separate spatial components
+by minimizing their mutual information \cite{hyvarinen2000}.
+This iterative blind source separation was
+realized by a parallel FASTICA implementation (200 maximum iterations,
+per-iteration tolerance of 0.0001,
+initialized by a random mixing matrix, preliminary whitening).
+SPCA separated the BOLD signals into
+network components with few regions, which scales well to 
+large datasets \cite{varoqu2011}.
+This regression-type optimization problem constrained by
+$\ell_1$-penalty in an implementation
+without orthogonality assumptions
+(1000 maximum iterations, per-iteration tolerance of 1 * 10\textsuperscript{-8}, sparsity
+alpha=1, ridge-shrinkage at 0.01, Lasso path computed with coordinate
+descent). Each linear decomposition revealed the specified number of
+latent network components in one half the HCP data.
+\linebreak
+The extracted hidden network components were subsequently used
+to reduce the remain half of task maps to a considerably smaller number of component
+loadings. 13,657 voxels were thus condensed into 1, 5, 10, .., 100
+measures of network involvement using ridge regression
+(regularization alpha parameter=0.001, using
+Cholesky solver). Multinomial logistic regression was finally performed on the
+brain network loadings to learn classifying the 18 cognitive tasks.
+Importantly, in all approaches, the final classification models were tested
+on an unseen test set (10\% of data).
+\linebreak
+
+linear decomposition + elastic net penalty -> has characteristics of a
+sparse PCA
+
+Learning of the identity function as trivial solution is avoided by
+the both bottleneck and the sparsity-enforcing ElasticNet penalty.
+
+o maximize intranetwork homoge- neity and between-network heterogeneity. 
+
+
+AE:
+coordinate system for points on the manifold
+
+FORMULA
+X e R^d real-valued input
+'reconstruction error' criterion
+encoder: input -> hidden reprsentation
+Its parameter set is θ = {W, b}, where W is a d′ × d weight matrix and b is an offset vector of dimensionality d′.
+decoder: gθ′ (y) = s(W′y + b′), (3)
+with appropriately sized parameters θ′ = {W′,b′}.
+where b0 and b1 are biase vectors
+average reconstruction error
+pen. avoids learning trivial soutoin - identitiy
+
+
+affine autoencoder with squared error loss
+tied weights beteen W0 and W1, i.e., W1 = W0^T
+X hat is a dterministic function of X
+It can thus be said that training an autoencoder to minimize reconstruction error amounts to maximizing a lower bound on the mutual information between input X and learnt repre- sentation Y .
+
+rest data is already compressed to a sparse PCA -> remote form of 
+pretraining of the first layer
+bottleneck -> unter-complete representing, i.e. lossy compression
+
+as a pretraining strategy
+
+are decomposed into d networks,
+in a way that maximizes the homogeneity of
+function within each network while maximizing the heterogeneity between them.
+
+output is vector-valued -> generative properties?
+optimal transformation matrix 
+
+forward propegation: input through architecture to generate output
+reconstruction cost
+backward propegation: generate the deltas for all units / model paramters
+corresponds to the derivative of the cost function with respect to the parameters
+
+
+
+100 components close to sparse over-complete representation because
+Xrest contains only 20 components
+
+LR:
+
+FORMULA
+
+mutiple output units
+
+
+RMSprop:
+batch size: 
+
+20 components: high bias/low variance
+100 compoentens: low bias/high variance
+
+
+Generating samples from the learned statistical model
+
+minimizing the discrepancy between the orig- inal data and its reconstruction.
+The required gradients are easily obtained by using the chain rule to
+backpropagate error derivatives first through the decoder network
+and then through the encoder network 
+
+theano/python
+
+
+
+\section{Experimental Results}
+The source code, which can reproduce the most important results and
+figures, is available at \url{http://github.com/banilo/nips2015}.
+
+all vectors are column vectors
+
+affine encoder and decoder
+
+Low-rank regression outperformed serial ICA/SparsePCA and logistic regression.
+
+
+
+
+
+
+Modifications of the mode that di not improve the genralization performacne:
+dropo-out, input corruption, addining non-linearities (sigmoid, tanh),
+
+
+introducing a
+nonlinearity (sigmoid, tanh) into the system did not improve predictive accuracy but
+elastic did -> most useful decomposition has characteristics of a SPCA
+and not PCA or ICA
+
+outperforms plain vanilla LR
+inject prior domain knowledge into the learning process
+
+
+
+
+
+\section{Discussion and Conclusion}
+%
+
+-hypothesis space includes sparse PCA and PCA but not ICA since no
+linearity
+
+respect structure in the fMRI data
+
+
+- if linearity, then would be closer to the notion of 1-hidden layer neural
+network rather than low-rank logistic regression
+
+
+
+We hope that these results stimulate the development of
+even more powerful semi-supervised classification methods
+
+
+improve computational tractability, prediction accuracy, and interpretability
+neuroimaging datasets
+does it produce testable predictions?
+-> we can test predictive value of network-network architectures across
+mental domains.
+
+open window to study the correspondence between brain dynamics during
+every-day mind-wandering and task-focused brain states.
+
+classifier that operates in a (sparse) network space, rather than in a voxel space.
+domain-specifc classification algorithms
+
+repertoire of mental operations that the human brain can perform
+
+large quantities of neuroimaging data
+logistic regression in an autoencoder paradigm
+
+automatically learn a mapping to and from a brain-network space
+
+statistical structure^
+
+PCA:
+captures structure in the data that is well described by Gaussian clouds,
+linear pair-wise correlations are most important form of statistical
+dependence/orthongonal components
+
+-> BOLD images can readily be reduced to linear combinations of
+sparse spatial structures
+
+scale different classificatiuon architectures to large neuroimaging data
+
+task data might concentrate near a low-dimensional manifold of brain networks
+
+neurobiolgocial fidelity
+
+entities of the neuroimaging domain
+
+%
+\paragraph{Acknowledgment}
+{\small
+Data were provided the Human Connectome Project.
+}
+
+
+\small
+\bibliographystyle{splncs03}
+\bibliography{nips_refs}
+
+\end{document}
