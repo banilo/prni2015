@@ -50,7 +50,7 @@ high-dimensional neuroimaging datasets}
 \newtheorem{cor}[thm]{Corollary}
 
 
-%\nipsfinalcopy % Uncomment for camera-ready version
+\nipsfinalcopy % Uncomment for camera-ready version
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
@@ -66,12 +66,12 @@ Imaging neuroscience links human behavior to aspects of brain
 biology in ever-increasing datasets.
 %
 Existing neuroimaging methods typically perform either discovery of
-neurobiological structure or evaluate targeted hypotheses on mental tasks.
+neurobiological structure or evaluation of explicit hypotheses on mental tasks.
 %
-Modelling mental operations however hinges
+Modelling mental tasks however hinges
 on the pertinence of the assumed neurobiological structure.
 %
-We therefore propose to the solve the unsupervised dimensionality reduction
+We therefore propose to solve the unsupervised dimensionality reduction
 and supervised task classification in
 an identical statistical learning problem.
 %
@@ -79,7 +79,7 @@ We show that this approach yields more accurate and more interpretable
 neural models of psychological tasks in a reference neuroimaging dataset.
 %
 
-\textbf{keywords}: dimensionality reduction; semi-supervised learning
+\textbf{keywords}: dimensionality reduction; semi-supervised learning;
 bioinformatics; fMRI; systems neuroscience
 
 \end{abstract}
@@ -96,11 +96,11 @@ to decompose the BOLD (blood-oxygen level-dependent) signals into the
 important modes of variation.
 The ensuing spatial activation patterns are believed to represent
 brain networks of
-functionally interaction brain regions.
+functionally interacting brain regions.
 Similarly, sparse PCA (SPCA; \cite{varoqu2011}) has been used to
 separate brain activity signals into parsimonious network components.
 Thus extracted brain networks have been shown to be
-manifestations of electrophysiological oscillation structure \cite{hipp15}.
+manifestations of electrophysiological oscillation frequencies \cite{hipp15}.
 Their fundamental role is
 attested by continued covariation during sleep and anesthesia.
 %
@@ -124,7 +124,7 @@ of experimental tasks.
 Dynamic causal modeling (DCM; \cite{stephan04}), in turn, quantifies directed,
 task-driven influences between regions
 by treating the brain as a nonlinear dynamic system with unknown
-neuronal states. As a last example, always more neuroimaging studies model
+ni  neuronal states. As a last example, always more neuroimaging studies model
 experimental tasks by training classification algorithms on brain signals
 \cite{poldrack09decoding}.
 All these methods are applied to labeled task data that capture brain dynamics
@@ -136,142 +136,81 @@ signal contains coherent spatial activation patterns.
 Second, existing neuroimaging analyses do not acknowledge the fact that the
 task-induced changes of the BOLD signal amount to less than 5\%
 of baseline activity \cite{fox07}. They do thus not exploit the high similarity
-of BOLD dynamics of the human brain during experimental tasks and at rest.
+of BOLD dynamics of the human brain at rest and during experimental tasks.
 Indeed, similar brain networks were observed when applying ICA on
 large quantities of
 rest and task data \cite{smith2009}.
 
 \linebreak
 
-Both aspects can be combined into a 
-semi-supervised (i.e., use task and rest data)
+Both aspects can be conjointly exploited in a 
+semi-supervised (i.e., use rest and task data)
 low-rank (i.e., perform network decomposition)
-approach for neuroimaging analyses.
-
-
-
-Yet, special interest lies in the data-driven
-discovery of neurobiological structure that explains differences
-in cognitive conditions. Integrating unsupervised discovery and
-supervised classification should preferentially identify
-neurobiological structure that allows for the best predictive models. We
-propose such an approach based on conjoint gradient-descent to optimize
-linear decomposition and multi-task disambiguation.
-
-Find the most discriminative linear combination of the main direction of
-variation in the data
-
-
-modes of variation in the brain and the neural correlates of mental
-operations have mostly been studied separately so far
-their correspondence remains largely unclear
-
-we provide principled computational framework to link these previously
-unconnected domains of study.
-
-learn a manifold / low-dimensional coordinate system
-motivates
-
-
-There is much uncertainty about the most pertinent representation
-of neural activation information
-
-PCA, SPCA and ICA are produce compact representations of uncorrelated or
-independent components
-
-combine exploratory and confirmatory analysis steps in a single framework
-allows for  overlapping response pattersn
-
-adjust the weight assigned to each spatial pattern to maximize
-discriminatory power
-
-useful intermediate representation
-
-integrate recently gained domain knowledge into statistical learning
-problems.
-
-Traditionally, dimensionality reduction depended on linear methods such as PCA
-Autoencoder \cite{hinton06}:
-one-layered learning model that computes distributed
-representation from the inputs by improving reconstructions from them.
-dimensionality reduction by learning the underlying manifolds
-for efficient representation of the data
-bottleneck
--> use AE als feature extractions
-guide the estimator where to put probability mass in the inputs
-AE is a common feature learning algorithm
-if hidden layer linear and squared error loss, it behaves like a PCA \cite{baldi1989neural}
-convex with unique global minimum
-optimization objective is the same as for PCA
-
-Most nonsupervised learning algorithms can be implemented as variants in the 
-autoencoder framework. This includes decmoposition and clustering task
-
-
-Linear autoencoders with tied weights and specific regularization terms
-yield efficient algorithms for ICA / nonlinearity -> then closer to feed-forward neural network
-\cite{le2011ica}
-
-ICA, Sparse autoencoders, and sparse coding are mathematically equivalent
-under mild conditions \cite{le2011ica}
-
-AE can caputer global and local distribution
-
-and SPCA (??).
--> an autoencoder can capture various different compression procedures
-
-- reformulate the AE prbleme as a regularization boejctive
-
--> backpropagation: solve the unsupervised ata repsentation and supervised
-problem in an identical process.
-coompute the error derivates of the weights
--> gradually modified according to possible compression algorithms
-
-without a-priori knowledge of the structure
-affine transformation to compression information in the input
-class of problems
-architecture
-statistical models
-
-directions of greatest variance; represents each data point by its coordinates along each of these directions
-
-LR:
-these weights are then fine-tuned by the LR
-
-Even if linear should scan a wide space of intersring model, since
-theoretcially, a two-layered neural networks can learn almost any function.
-
-learn to the optimal projection of the input data
-into the main direction of variation and
-then classify along these principal directions.
-Vincent2010: it has been shown experimen- tally that
-beginning by optimizing an unsupervised criterion, oblivious of the specific
-classification problem, can actually greatly help in eventually achieving
-superior performance for that classifica- tion problem.
-
-among the models it will favor those that feature most neurobiological
-pertinence
-
-From the perspective of dictionary learning, the first layer can be
-viewed as a set of basis functions whose linear combinations are learned
-in the second layer \cite{olshausen96}.
-
-project the data-generating process on the axes of main variation
-autoencoder allows to reverse-engineer proerties of the data-generating
+approach to neuroimaging analysis.
+%
+The integration of brain-network discovery in a 
+supervised classification goal should identify the
+neurobiological structure that allows for the best predictive models.
+%
+Autoencoders suggest themselves because they can emulate
+variants of most nonsupervised learning algorithms,
+including PCA, SPCA, and ICA.
+Autoencoders
+are one-layered learning models that find local and global
+representation from the inputs
+by improving reconstructions from them \cite{hinton06}.
+%
+They behave like a PCA
+in case of one linear hidden layer and a squared error loss
+\cite{baldi1989neural}.
+This architecture yields a convex optimization objective
+with unique global minimum.
+Autoencoders behave like a SPCA if shrinkage terms are added for the
+matrix weights in the optimization objective.
+In turn, they behave like an ICA in case of a nonlinear convex
+function of the first-layer activation and tied weights \cite{le2011ica}.
+These authors further demonstrated that ICA, sparse autoencoders, and 
+sparse coding are mathematically equivalent
+under mild conditions.
+In this way, autoencoders can flexibly project the neuroimaging data
+onto the axes of main variation and thus
+reverse-engineer properties of the data-generating
 neural process \cite{olshausen96}.
 
-learn complex properties of the brain's task response patterns
+\linebreak
 
-convert high-dimensional data to low-dimensional network codes
-
-data should be more easily separable in the network spacew
-low-dimensional, linear structure
-
-equates with a shallow neural network without non-linearities
-
-
-
-
+In the present investigation,
+an autoencoder will be fed by (unlabeled) rest data and
+integrated as bottleneck
+into a low-rank logistic regression fed by (labeled) task data.
+Using the chain rule in back-propagation, we can then
+solve the unsupervised data representation and a supervised classification
+in an identical statistical learning problem.
+%
+From the perspective of dictionary learning, the first layer can be
+viewed as a learned set of basis functions
+whose linear combinations are learned
+in the second layer \cite{olshausen96}.
+%
+Neurobiologically, this allows 
+delineating a low-dimensional manifold of brain network patterns and then 
+distinguishing mental tasks
+by their most discriminative linear combinations.
+%
+Theoretically, a big reduction of the model variance is expected by using the
+resting-state autoencoder as regularization mechanisms
+to put probability mass on the most neurobiological
+valid members of the model space.
+%
+The generalization performance should consequently be improved due to 
+much reduced Vapnik-Chervonenkis dimensions of the classification estimator.
+%
+Taken together,
+the important modes of variation in brain dynamics and
+the neural correlates subserving mental operations
+have mostly been studied in isolation.
+We provide a principled computational framework to link these previously
+unconnected domains of systems neuroscience.
 
 
 %
@@ -394,6 +333,9 @@ with appropriately sized parameters θ′ = {W′,b′}.
 where b0 and b1 are biase vectors
 average reconstruction error
 pen. avoids learning trivial soutoin - identitiy
+
+coompute the error derivates of the weights
+-> gradually modified according to possible compression algorithms
 
 
 affine autoencoder with squared error loss
@@ -534,6 +476,9 @@ task data might concentrate near a low-dimensional manifold of brain networks
 neurobiolgocial fidelity
 
 entities of the neuroimaging domain
+
+There is much uncertainty about the most pertinent representation
+of neural activation information
 
 %
 \paragraph{Acknowledgment}
