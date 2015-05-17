@@ -9,6 +9,9 @@
 \usepackage{bm}
 \usepackage{bbm}
 \usepackage[titletoc]{appendix}
+\usepackage{wrapfig}
+\usepackage{afterpage}
+\usepackage{amssymb}
 
 \def\B#1{\bm{#1}}
 %\def\B#1{\mathbf{#1}}
@@ -25,7 +28,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \title{Semi-supervised low-rank logistic regression for
-high-dimensional neuroimaging datasets}
+high-dimensional neuroimaging data}
 
 
 \newcommand{\fix}{\marginpar{FIX}}
@@ -58,8 +61,9 @@ high-dimensional neuroimaging datasets}
 
 \maketitle
 
-\author{Danilo Bzdok, Michael Eickenberg, Bertrand Thirion, Ga\"el
-  Varoquaux \\\\\textbf{\textit{email:} }firstname.lastname@inria.fr}
+\author{Danilo Bzdok, Michael Eickenberg, Olivier, Grisel,
+  Bertrand Thirion,
+  Ga\"el Varoquaux \\\\\textbf{\textit{email:} }firstname.lastname@inria.fr}
 
 \begin{abstract}
 Imaging neuroscience links human behavior to aspects of brain
@@ -97,18 +101,19 @@ important modes of variation.
 The ensuing spatial activation patterns are believed to represent
 brain networks of
 functionally interacting brain regions.
-Similarly, sparse PCA (SPCA; \cite{varoqu2011}) has been used to
+Similarly, sparse principal component analysis (SPCA; \cite{varoqu2011})
+has been used to
 separate brain activity signals into parsimonious network components.
 Thus extracted brain networks have been shown to be
 manifestations of electrophysiological oscillation frequencies \cite{hipp15}.
-Their fundamental role is
+Their fundamental role in brain organization is
 attested by continued covariation during sleep and anesthesia.
 %
 Network discovery is typically performed by applying ICA or SPCA on
 unlabeled "resting-state" data. These capture brain dynamics
 during ongoing random thought without controlled environmental input.
-The rationale is that the biggest fraction of BOLD signals do
-not correlate with a particular behavior, stimulus, or experimental task. 
+The biggest fraction of the BOLD signals are known
+not to correlate with a particular behavior, stimulus, or experimental task. 
 
 \linebreak
 
@@ -124,7 +129,7 @@ of experimental tasks.
 Dynamic causal modeling (DCM; \cite{stephan04}), in turn, quantifies directed,
 task-driven influences between regions
 by treating the brain as a nonlinear dynamic system with unknown
-ni  neuronal states. As a last example, always more neuroimaging studies model
+neuronal states. As a last example, always more neuroimaging studies model
 experimental tasks by training classification algorithms on brain signals
 \cite{poldrack09decoding}.
 All these methods are applied to labeled task data that capture brain dynamics
@@ -132,21 +137,20 @@ during stimulus-guided behavior.
 Two important conclusions can be drawn.
 First, the mentioned supervised neuroimaging analyses operate
 without exception in a single-voxel space. This ignores the fact that the BOLD
-signal contains coherent spatial activation patterns.
+signal exhibits coherent spatial activation patterns.
 Second, existing neuroimaging analyses do not acknowledge the fact that the
 task-induced changes of the BOLD signal amount to less than 5\%
 of baseline activity \cite{fox07}. They do thus not exploit the high similarity
-of BOLD dynamics of the human brain at rest and during experimental tasks.
-Indeed, similar brain networks were observed when applying ICA on
-large quantities of
-rest and task data \cite{smith2009}.
+of BOLD dynamics in the human brain at rest and during experimental tasks.
+Indeed, very similar brain networks were observed when applying ICA
+separately on rest and task data \cite{smith2009}.
 
 \linebreak
 
-Both aspects can be conjointly exploited in a 
+Both biological properties can be conjointly exploited in a 
 semi-supervised (i.e., use rest and task data)
 low-rank (i.e., perform network decomposition)
-approach to neuroimaging analysis.
+approach.
 %
 The integration of brain-network discovery in a 
 supervised classification goal should identify the
@@ -156,9 +160,9 @@ Autoencoders suggest themselves because they can emulate
 variants of most nonsupervised learning algorithms,
 including PCA, SPCA, and ICA.
 Autoencoders
-are one-layered learning models that find local and global
-representation from the inputs
-by improving reconstructions from them \cite{hinton06}.
+are one-layered learning models that condense the input data to
+local and global representations
+by improving reconstruction from them \cite{hinton06}.
 %
 They behave like a PCA
 in case of one linear hidden layer and a squared error loss
@@ -175,7 +179,7 @@ under mild conditions.
 In this way, autoencoders can flexibly project the neuroimaging data
 onto the axes of main variation and thus
 reverse-engineer properties of the data-generating
-neural process \cite{olshausen96}.
+neural processes \cite{olshausen96}.
 
 \linebreak
 
@@ -197,9 +201,9 @@ delineating a low-dimensional manifold of brain network patterns and then
 distinguishing mental tasks
 by their most discriminative linear combinations.
 %
-Theoretically, a big reduction of the model variance is expected by using the
-resting-state autoencoder as regularization mechanisms
-to put probability mass on the most neurobiological
+Theoretically, a big reduction of the model variance is expected by
+regularization using resting-state autoencoder
+to put probability mass on the most neurobiologically
 valid members of the model space.
 %
 The generalization performance should consequently be improved due to 
@@ -212,6 +216,13 @@ have mostly been studied in isolation.
 We provide a principled computational framework to link these previously
 unconnected domains of systems neuroscience.
 
+\begin{wrapfigure}{r}{0.40\textwidth}
+  \begin{center}
+    \includegraphics[width=0.40\textwidth]{figures/figure1.png}
+  \end{center}
+  \caption {\textbf{Architecture}
+  }
+\end{wrapfigure}
 
 %
 \section{Methods}
@@ -313,6 +324,24 @@ on an unseen test set (10\% of data).
 
 linear decomposition + elastic net penalty -> has characteristics of a
 sparse PCA
+\begin{wrapfigure}{r}{0.40\textwidth}
+  \begin{center}
+    \includegraphics[width=0.40\textwidth]{figures/figure3.png}
+  \end{center}
+  \caption {\textbf{Equilibrium between autoencoder and low-rank logistic regression}
+  One learned decomposition component (out of 20) between the only-autoencoder
+  (\textit{uppermost panel}) and only-logistic-regression
+  (\textit{lowermost panel}) scenarios.
+  The congruent structure (\textit{red, middle column})
+  in the
+  posterior cingulate cortex, posterior mid-cingulate cortex, and medial
+  prefrontal cortex that is hence important in decompositions of the rest and
+  task neuroimaging data. With increasing weight on the supervised learning,
+  non-congruent structure emerges in the early (\textit{blue}) and
+  lateral (\textit{red}) visual cortex
+  (\textit{right column}). Matrix weights were z-scored.
+  }
+\end{wrapfigure}
 
 Learning of the identity function as trivial solution is avoided by
 the both bottleneck and the sparsity-enforcing ElasticNet penalty.
@@ -322,6 +351,7 @@ o maximize intranetwork homoge- neity and between-network heterogeneity.
 
 AE:
 coordinate system for points on the manifold
+low-dimensional bottleneck layer
 
 FORMULA
 X e R^d real-valued input
@@ -366,18 +396,70 @@ corresponds to the derivative of the cost function with respect to the parameter
 100 components close to sparse over-complete representation because
 Xrest contains only 20 components
 
-LR:
+whereas elasticnet on the model paramters is regulization
+
+
+HINTS:
+In fact, the constraint by a rest-data autoencoder qualifies as a
+\textit{hint} rather than regularization \cite{abu1994hints}.
+Its purpose is not to prevent overfitting but to introduce
+prior knowledge on known properties of the unknown target function $f$.
+Rather than relying only on input-output pairs in the learning process,
+we thus narrow our hypothesis set to the biologically most plausible solutions.
+That is, we reduce the search space in a way that
+is compatible with the expected representation of BOLD activity signals.
+
+
+
 
 FORMULA
 
+{arg\,min}_\theta \hspace{0.2cm} {\mathcal{L}}(\theta, \lambda) = \lambda\frac{1}{N_{X_{task}}} \sum_{i=0}^{N_{X_{task}}} \log(P(Y=y^{(i)}|x^{(i)}; W,b)) \hspace{0.2cm} + \hspace{0.2cm} (1-\lambda)\frac{1}{N_{X_{rest}}}\|X_{rest}-\hat X_{rest}(W,b)\|^2
+
 mutiple output units
 
+\linebreak
 
-RMSprop:
-batch size: 
+As solver, we chose \textit{rmsprop},
+a mini-batch version of rprop \cite{dauphin2015rmsprop}.
+This procedure dictates an adaptive learning rate
+for each model parameter by
+scaled gradients from a running average.
+Gradient normalization by RMSprop
+is known to effectively exploit curvature information.
+We opted for a small batch size of $100$, given the high degree of
+redundancy in $X_{rest}$ and $X_{task}$.
+The matrix parameters were initalized by Gaussian random values multiplied
+by a gain of $0.004$. The bias parameters were initalized to be zero.
+The normalization factor is computed by
+
+\begin{eqnarray*}
+v^{(t+1)} = \rho v^{(t+1)} + (1 - \rho)(\nabla f)^2
+\end{eqnarray*}
+
+where $0 < \rho < 1$ constitutes the decay rate. $\rho$ was set to
+$0.9$ to deemphasize the magnitude of the gradient.
+The update step is
+given by 
+
+\begin{eqnarray*}
+\theta^{(t+1)} = \theta^{(t)} + \alpha \frac{\nabla f(\theta^{(t)})}{\sqrt{v^{(t+1)} + \epsilon}}
+\end{eqnarray*}
+
+where $\alpha$ is the learning rate and $\epsilon$ a damping factor.
+The hyper-parameter $\alpha$ was set to $0.00001$ by prior manuel
+cross-validation and $\epsilon$ was set to $1^{-6}$.
+%
+Note that we have also experimented with other solvers
+(stochastic gradient descent, adadelta, and adagrad) but found that
+rmsprop converged faster and with higher generalization performance.
+
+\linebreak
+
 
 20 components: high bias/low variance
 100 compoentens: low bias/high variance
+
 
 
 Generating samples from the learned statistical model
@@ -388,12 +470,20 @@ backpropagate error derivatives first through the decoder network
 and then through the encoder network 
 
 theano/python
+The analyses were performed in Python.
+We used \textit{nilearn} to handle
+the high-dimensional neuroimaging data and
+\textit{theano} for automatic gradient
+differentiation of symbolic computation graphs.
+All Python scripts that generated the results are
+accessible online for reproducibility and reuse
+\url{http://github.com/banilo/nips2015}.
+
 
 
 
 \section{Experimental Results}
-The source code, which can reproduce the most important results and
-figures, is available at \url{http://github.com/banilo/nips2015}.
+
 
 all vectors are column vectors
 
@@ -401,6 +491,7 @@ affine encoder and decoder
 
 Low-rank regression outperformed serial ICA/SparsePCA and logistic regression.
 
+reduction of n gray-matter voxels to n components
 
 
 
@@ -424,6 +515,15 @@ inject prior domain knowledge into the learning process
 
 \section{Discussion and Conclusion}
 %
+There is an increasing occurrence of high-dimensional problems in the
+neuroimaging domain. This calls for new statistical learning algorithms that
+behave well in large-cohort settings. Ideally, they should acknowledge
+and exploit existing widely-accepted neuroscientific knowledge.
+In the present work, we propose such an estimator that learns
+dimensionality reduction
+in a neurobiologically valid and interpretable fashion.
+
+\linebreak
 
 -hypothesis space includes sparse PCA and PCA but not ICA since no
 linearity
@@ -479,11 +579,15 @@ entities of the neuroimaging domain
 
 There is much uncertainty about the most pertinent representation
 of neural activation information
+put probability mas shwere we expeted neurobiological strucuture
+
+canonical set of brain networks
 
 %
 \paragraph{Acknowledgment}
 {\small
-Data were provided the Human Connectome Project.
+Data were provided the Human Connectome Project. The study was supported
+by the German National Academic Foundation (D.B.).
 }
 
 
