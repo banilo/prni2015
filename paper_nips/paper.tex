@@ -58,12 +58,11 @@ high-dimensional neuroimaging data}
 
 \begin{document}
 
-
-\maketitle
-
-\author{Danilo Bzdok, Michael Eickenberg, Olivier, Grisel,
+\author{Danilo Bzdok, Michael Eickenberg, Olivier Grisel,
   Bertrand Thirion,
   Ga\"el Varoquaux \\\\\textbf{\textit{email:} }firstname.lastname@inria.fr}
+
+\maketitle
 
 \begin{abstract}
 Imaging neuroscience links human behavior to aspects of brain
@@ -115,8 +114,6 @@ during ongoing random thought without controlled environmental input.
 The biggest fraction of the BOLD signals are known
 not to correlate with a particular behavior, stimulus, or experimental task. 
 
-\linebreak
-
 On the other hand, to investigate
 the neural correlates underlying mental tasks,
 the general linear model (GLM; \cite{friston94}) is the dominant approach.
@@ -144,8 +141,6 @@ of baseline activity \cite{fox07}. They do thus not exploit the high similarity
 of BOLD dynamics in the human brain at rest and during experimental tasks.
 Indeed, very similar brain networks were observed when applying ICA
 separately on rest and task data \cite{smith2009}.
-
-\linebreak
 
 Both biological properties can be conjointly exploited in a 
 semi-supervised (i.e., use rest and task data)
@@ -180,8 +175,6 @@ In this way, autoencoders can flexibly project the neuroimaging data
 onto the axes of main variation and thus
 reverse-engineer properties of the data-generating
 neural processes \cite{olshausen96}.
-
-\linebreak
 
 In the present investigation,
 an autoencoder will be fed by (unlabeled) rest data and
@@ -284,7 +277,7 @@ iteration (100 samples per batch, 250 epochs). Using the chain rule, the
 partial
 derivates for the update were computed for the transformation into the
 latent space and the subsequent transformation into the class space. We choose
-the RMSprop algorithm \cite{dauphin15} with an initial learning rate of
+the RMSprop algorithm \cite{rmsprop} with an initial learning rate of
 0.01. Early stopping ensured that the best weight matrices/vectors were
 retained in each epoch cycle. This was evaluated by the prediction
 accuracy on a validation set (10\% of the training data) at each iteration.
@@ -354,26 +347,26 @@ coordinate system for points on the manifold
 low-dimensional bottleneck layer
 
 FORMULA
-X e R^d real-valued input
+%X e R^d real-valued input
 'reconstruction error' criterion
 encoder: input -> hidden reprsentation
-Its parameter set is θ = {W, b}, where W is a d′ × d weight matrix and b is an offset vector of dimensionality d′.
-decoder: gθ′ (y) = s(W′y + b′), (3)
-with appropriately sized parameters θ′ = {W′,b′}.
+%Its parameter set is θ = {W, b}, where W is a d′ × d weight matrix and b is an offset vector of dimensionality d′.
+%decoder: gθ′ (y) = s(W′y + b′), (3)
+%with appropriately sized parameters θ′ = {W′,b′}.
 where b0 and b1 are biase vectors
 average reconstruction error
 pen. avoids learning trivial soutoin - identitiy
 
 coompute the error derivates of the weights
--> gradually modified according to possible compression algorithms
+gradually modified according to possible compression algorithms
 
 
 affine autoencoder with squared error loss
-tied weights beteen W0 and W1, i.e., W1 = W0^T
+%tied weights beteen W0 and W1, i.e., W1 = W0^T
 X hat is a dterministic function of X
 It can thus be said that training an autoencoder to minimize reconstruction error amounts to maximizing a lower bound on the mutual information between input X and learnt repre- sentation Y .
 
-rest data is already compressed to a sparse PCA -> remote form of 
+rest data is already compressed to a sparse PCA remote form of 
 pretraining of the first layer
 bottleneck -> unter-complete representing, i.e. lossy compression
 
@@ -398,8 +391,7 @@ Xrest contains only 20 components
 
 whereas elasticnet on the model paramters is regulization
 
-
-HINTS:
+\paragraph{Hints.}
 In fact, the constraint by a rest-data autoencoder qualifies as a
 \textit{hint} rather than regularization \cite{abu1994hints}.
 Its purpose is not to prevent overfitting but to introduce
@@ -414,14 +406,18 @@ is compatible with the expected representation of BOLD activity signals.
 
 FORMULA
 
-{arg\,min}_\theta \hspace{0.2cm} {\mathcal{L}}(\theta, \lambda) = \lambda\frac{1}{N_{X_{task}}} \sum_{i=0}^{N_{X_{task}}} \log(P(Y=y^{(i)}|x^{(i)}; W,b)) \hspace{0.2cm} + \hspace{0.2cm} (1-\lambda)\frac{1}{N_{X_{rest}}}\|X_{rest}-\hat X_{rest}(W,b)\|^2
+\begin{eqnarray}
+  \begin{split}
+{arg\,min}_\theta \hspace{0.2cm} {\mathcal{L}}(\theta, \lambda) &= \lambda\frac{1}{N_{X_{task}}} \sum_{i=0}^{N_{X_{task}}} \log(P(Y=y^{(i)}|x^{(i)}; W,b)) \hspace{0.2cm} \\
+&+ \hspace{0.2cm} (1-\lambda)\frac{1}{N_{X_{rest}}}\|X_{rest}-\hat X_{rest}(W,b)\|^2
+  \end{split}
+  \label{eq:loss_equ}
+\end{eqnarray}
 
 mutiple output units
-
-\linebreak
-
-As solver, we chose \textit{rmsprop},
-a mini-batch version of rprop \cite{dauphin2015rmsprop}.
+aCcording to equation \eqref{eq:loss_equ}
+As solver, we chose \textit{rmsprop} \cite{rmsprop},
+a mini-batch version of rprop.
 This procedure dictates an adaptive learning rate
 for each model parameter by
 scaled gradients from a running average.
@@ -431,22 +427,23 @@ We opted for a small batch size of $100$, given the high degree of
 redundancy in $X_{rest}$ and $X_{task}$.
 The matrix parameters were initalized by Gaussian random values multiplied
 by a gain of $0.004$. The bias parameters were initalized to be zero.
-The normalization factor is computed by
 
-\begin{eqnarray*}
-v^{(t+1)} = \rho v^{(t+1)} + (1 - \rho)(\nabla f)^2
-\end{eqnarray*}
+With a slight abuse of notation, let $\theta$ denote a component of $\theta$.
+The normalization factor and the update rule for $\theta$
+are given by
+
+\begin{eqnarray}
+  \begin{split}
+v^{(t+1)} &= \rho v^{(t+1)} + (1 - \rho)\left(\frac{\partial f}{\partial \theta}\right)^2
+%v^{(t+1)} = \rho v^{(t+1)} + (1 - \rho)˜|\nabla f
+\\
+\theta^{(t+1)} &= \theta^{(t)} + \alpha \frac{\nabla f(\theta^{(t)})}{\sqrt{v^{(t+1)} + \epsilon}},
+  \end{split}
+\end{eqnarray}
 
 where $0 < \rho < 1$ constitutes the decay rate. $\rho$ was set to
 $0.9$ to deemphasize the magnitude of the gradient.
-The update step is
-given by 
-
-\begin{eqnarray*}
-\theta^{(t+1)} = \theta^{(t)} + \alpha \frac{\nabla f(\theta^{(t)})}{\sqrt{v^{(t+1)} + \epsilon}}
-\end{eqnarray*}
-
-where $\alpha$ is the learning rate and $\epsilon$ a damping factor.
+Further $\alpha$ is the learning rate and $\epsilon$ a global damping factor.
 The hyper-parameter $\alpha$ was set to $0.00001$ by prior manuel
 cross-validation and $\epsilon$ was set to $1^{-6}$.
 %
@@ -454,13 +451,8 @@ Note that we have also experimented with other solvers
 (stochastic gradient descent, adadelta, and adagrad) but found that
 rmsprop converged faster and with higher generalization performance.
 
-\linebreak
-
-
 20 components: high bias/low variance
 100 compoentens: low bias/high variance
-
-
 
 Generating samples from the learned statistical model
 
@@ -469,12 +461,15 @@ The required gradients are easily obtained by using the chain rule to
 backpropagate error derivatives first through the decoder network
 and then through the encoder network 
 
-theano/python
+theanopython
 The analyses were performed in Python.
 We used \textit{nilearn} to handle
-the high-dimensional neuroimaging data and
-\textit{theano} for automatic gradient
-differentiation of symbolic computation graphs.
+the high-dimensional neuroimaging data 
+\cite{abrah14}
+and
+\textit{theano} for automatic
+differentiation of symbolic computation graphs
+\cite{bastien2012theano, bergstra2010theano}.
 All Python scripts that generated the results are
 accessible online for reproducibility and reuse
 \url{http://github.com/banilo/nips2015}.
@@ -523,8 +518,6 @@ In the present work, we propose such an estimator that learns
 dimensionality reduction
 in a neurobiologically valid and interpretable fashion.
 
-\linebreak
-
 -hypothesis space includes sparse PCA and PCA but not ICA since no
 linearity
 
@@ -559,7 +552,7 @@ logistic regression in an autoencoder paradigm
 
 automatically learn a mapping to and from a brain-network space
 
-statistical structure^
+statistical structure
 
 PCA:
 captures structure in the data that is well described by Gaussian clouds,
@@ -582,6 +575,14 @@ of neural activation information
 put probability mas shwere we expeted neurobiological strucuture
 
 canonical set of brain networks
+
+
+FUTURE
+link the restings-tate component to the pattern sof cognitive proceses
+reduce information von resting-state data in neurological and psychiatric
+populations for discovery of neurobiological sub-groups as well as
+prediction of disease trajectories and drug responses
+
 
 %
 \paragraph{Acknowledgment}
