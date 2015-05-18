@@ -101,35 +101,10 @@ class SSEncoder(BaseEstimator):
         
     def get_param_pool(self):
         cur_params = (
-            self.W0s, self.bW0s
+            self.V0s, self.bV0
         )
         return cur_params
         
-    def test_performance_in_other_dataset(self):
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.cross_validation import StratifiedShuffleSplit
-
-        compr_matrix = self.W0s.get_value().T  # currently best compression
-        AT_X_compr = np.dot(compr_matrix, AT_X.T).T
-        clf = LogisticRegression(penalty='l1')
-        folder = StratifiedShuffleSplit(y=AT_labels, n_iter=5, test_size=0.2)
-
-        acc_list = []
-        prfs_list = []
-        for (train_inds, test_inds) in folder:
-            clf.fit(AT_X_compr[train_inds, :], AT_labels[train_inds])
-            pred_y = clf.predict(AT_X_compr[test_inds, :])
-
-            acc = (pred_y == AT_labels[test_inds]).mean()
-            prfs_list.append(precision_recall_fscore_support(
-                             AT_labels[test_inds], pred_y))
-
-            acc_list.append(acc)
-
-        compr_mean_acc = np.mean(acc_list)
-        prfs = np.asarray(prfs_list).mean(axis=0)
-        return compr_mean_acc, prfs
-
     def fit(self, X_task, y):
         DEBUG_FLAG = True
 
@@ -139,6 +114,7 @@ class SSEncoder(BaseEstimator):
         self.input_taskdata = T.matrix(dtype='float32', name='input_taskdata')
         self.input_restdata = T.matrix(dtype='float32', name='input_restdata')
         self.params_from_last_iters = []
+        n_input = X_task.shape[1]
 
         index = T.iscalar(name='index')
         
@@ -172,7 +148,6 @@ class SSEncoder(BaseEstimator):
             self.dbg_lr_cost_ = list()
             self.dbg_ae_nonimprovesteps = list()
             self.dbg_acc_other_ds_ = list()
-            self.dbg_combined_cost_ = list()
             self.dbg_prfs_ = list()
             self.dbg_prfs_other_ds_ = list()
 
@@ -218,6 +193,7 @@ class SSEncoder(BaseEstimator):
         # optimization loop
         start_time = time.time()
         lr_last_cost = np.inf
+        ae_cur_cost = np.inf
         no_improve_steps = 0
         acc_train, acc_val = 0., 0.
         for i_epoch in range(self.max_epochs):
@@ -229,7 +205,7 @@ class SSEncoder(BaseEstimator):
 
             lr_n_batches = lr_train_samples // self.batch_size
             for i in range(lr_n_batches):
-                lr_cur_cost = f_train_lr(i)
+                lr_cur_cost = f_train_lr(i)[0]
 
             # evaluate epoch cost
             if lr_last_cost - lr_cur_cost < 0.1:
@@ -249,19 +225,12 @@ class SSEncoder(BaseEstimator):
             if (i_epoch % 10 == 0):
                 self.dbg_ae_cost_.append(ae_cur_cost)
                 self.dbg_lr_cost_.append(lr_cur_cost)
-                self.dbg_combined_cost_.append(combined_cost)
 
                 self.dbg_epochs_.append(i_epoch + 1)
                 self.dbg_ae_nonimprovesteps.append(no_improve_steps)
                 self.dbg_acc_train_.append(acc_train)
                 self.dbg_acc_val_.append(acc_val)
                 self.dbg_prfs_.append(prfs_val)
-
-                # test out-of-dataset performance
-                od_acc, prfs_other = self.test_performance_in_other_dataset()
-                self.dbg_acc_other_ds_.append(od_acc)
-                self.dbg_prfs_other_ds_.append(prfs_other)
-                print('out-of-dataset acc: %.2f' % od_acc)
                 
             # if i_epoch > (self.max_epochs - 100):
             param_pool = self.get_param_pool()
