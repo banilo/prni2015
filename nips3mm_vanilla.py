@@ -350,51 +350,46 @@ V1_mat = estimator.V1s.get_value().T
 np.save(cur_path + 'V1comps', V1_mat)
 dump_comps(nifti_masker, fname, comps, threshold=0.25)
 
-# equally scaled plots
-# import re
-# pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
-# dbg_epochs_ = np.load(pkgs[0])
-# n_comps = [100]
-# pkgs = glob.glob(RES_NAME + '/*dbg_acc_train*.npy')
-# for n_comp in n_comps:
-#     plt.figure()
-#     for p in pkgs:
-#         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-#         # n_hidden = int(re.search('comp=(?P<comp>.{1,2,3})_', p).group('comp'))
-#         n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
-#         if n_comp != n_hidden:
-#             continue
-#         
-#         dbg_acc_train_ = np.load(p)
-#         
-#         cur_label = 'n_comp=%i' % n_hidden
-#         cur_label += '/'
-#         cur_label += 'lambda=%.2f' % lambda_param
-#         cur_label += '/'
-#         if not '_AE' in p:
-#             cur_label += 'LR only!'
-#         elif 'subRS' in p:
-#             cur_label += 'RSnormal'
-#         elif 'spca20RS' in p:
-#             cur_label += 'RSspca20'
-#         elif 'pca20RS' in p:
-#             cur_label += 'RSpca20'
-#         cur_label += '/'
-#         cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
-#         cur_label += '' if '_AE' in p else '/LR only!'
-#         plt.plot(
-#             dbg_epochs_,
-#             dbg_acc_train_,
-#             label=cur_label)
-#     plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss')
-#     plt.legend(loc='lower right', fontsize=9)
-#     plt.yticks(np.linspace(0., 1., 11))
-#     plt.ylabel('training accuracy')
-#     plt.xlabel('epochs')
-#     plt.ylim(0., 1.05)
-#     plt.grid(True)
-#     plt.show()
-#     plt.savefig(op.join(WRITE_DIR, 'accuracy_train_%icomps.png' % n_comp))
+import re
+pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
+dbg_epochs_ = np.load(pkgs[0])
+d = {
+    'training accuracy': '/*dbg_acc_train*.npy',
+    'accuracy val': '/*dbg_acc_val_*.npy',
+    'loss lr': '/*dbg_lr_cost_*.npy'
+}
+for k, v in d.iteritems():
+    pkgs = glob.glob(RES_NAME + v)
+    p = pkgs[0]
+    cur_values = np.load(p)
+
+    cur_label = ''
+    if not '_AE' in p:
+        cur_label += 'LR only!'
+    elif 'subRS' in p:
+        cur_label += 'RSnormal'
+    elif 'spca20RS' in p:
+        cur_label += 'RSspca20'
+    elif 'pca20RS' in p:
+        cur_label += 'RSpca20'
+    cur_label += '/'
+    cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
+    cur_label += '' if '_AE' in p else '/LR only!'
+    plt.figure()
+    plt.plot(
+        dbg_epochs_,
+        cur_values,
+        label=cur_label)
+    plt.title('LR L1=0.1 L2=0.1 res=3mm')
+    plt.yticks(np.linspace(0., 1., 11))
+    plt.ylabel(k)
+    plt.xlabel('epochs')
+    plt.ylim(0., 1.05)
+    plt.grid(True)
+    plt.show()
+    plt.savefig(op.join(WRITE_DIR, k.replace(' ', '_') + '.png'))
+
+
 # 
 # pkgs = glob.glob(RES_NAME + '/*dbg_acc_val_*.npy')
 # for n_comp in n_comps:  # 
