@@ -738,7 +738,7 @@ for n_comp in n_comps:  # AE
     plt.show()
     plt.savefig(op.join(WRITE_DIR, 'loss_combined_%icomps.png' % n_comp))
 
-pkgs = glob.glob(RES_NAME + '/*lambda=0.5*dbg_prfs_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_.npy')
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
@@ -761,7 +761,7 @@ for n_comp in n_comps:
             cur_label += 'RSpca20'
         cur_label += '/'
         cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
-        for i in np.arange(18):
+        for i in np.arange(38):
             plt.plot(
                 dbg_epochs_,
                 np.array(dbg_prfs_)[:, 0, i],
@@ -777,7 +777,7 @@ for n_comp in n_comps:
     plt.savefig(op.join(WRITE_DIR, 'prec_inds_%icomps.png' % n_comp))
 
 # in-dataset recall at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.5*dbg_prfs_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_.npy')
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
@@ -801,7 +801,7 @@ for n_comp in n_comps:
             cur_label += 'RSpca20'
         cur_label += '/'
         cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
-        for i in np.arange(18):
+        for i in np.arange(38):
             plt.plot(
                 dbg_epochs_,
                 np.array(dbg_prfs_)[:, 1, i],
@@ -817,7 +817,7 @@ for n_comp in n_comps:
     plt.savefig(op.join(WRITE_DIR, 'rec_inds_%icomps.png' % n_comp))
 
 # in-dataset f1 at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.5*dbg_prfs_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_.npy')
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
@@ -840,7 +840,7 @@ for n_comp in n_comps:
             cur_label += 'RSpca20'
         cur_label += '/'
         cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
-        for i in np.arange(18):
+        for i in np.arange(38):
             plt.plot(
                 dbg_epochs_,
                 np.array(dbg_prfs_)[:, 2, i],
@@ -856,7 +856,7 @@ for n_comp in n_comps:
     plt.savefig(op.join(WRITE_DIR, 'f1_inds_%icomps.png' % n_comp))
 
 # out-of-dataset precision at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.5*dbg_prfs_other_ds_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_other_ds_.npy')
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
@@ -895,7 +895,7 @@ for n_comp in n_comps:
     plt.savefig(op.join(WRITE_DIR, 'prec_oods_%icomps.png' % n_comp))
 
 # out-of-dataset recall at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.5*dbg_prfs_other_ds_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_other_ds_.npy')
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
@@ -934,7 +934,7 @@ for n_comp in n_comps:
     plt.savefig(op.join(WRITE_DIR, 'rec_oods_%icomps.png' % n_comp))
 
 # out-of-dataset f1 at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.5*dbg_prfs_other_ds_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_other_ds_.npy')
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:

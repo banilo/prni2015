@@ -2,6 +2,8 @@
 HCP: semi-supervised network decomposition by low-rank logistic regression
 """
 """
+preliminary conclusion:
+- abc
 """
 
 print __doc__
@@ -26,45 +28,11 @@ from nilearn.image import concat_imgs
 import joblib
 import time
 
-RES_NAME = 'nips3mm_vanilla'
-WRITE_DIR = op.join(os.getcwd(), RES_NAME)
-if not op.exists(WRITE_DIR):
-    os.mkdir(WRITE_DIR)
+LR_AE_DIR = 'nips3mm'
+LR_DIR = 'nips3mm_vanilla'
 
 ##############################################################################
-# load+preprocess data
-##############################################################################
-
-mask_img = 'grey10_icbm_3mm_bin.nii.gz'
-nifti_masker = NiftiMasker(mask_img=mask_img, smoothing_fwhm=False,
-                           standardize=False)
-nifti_masker.fit()
-mask_nvox = nifti_masker.mask_img_.get_data().sum()
-
-print('Loading data...')
-
-# ARCHI task
-X_task, labels = joblib.load('preload_HT_3mm')
-
-labels = np.int32(labels)
-
-# contrasts are IN ORDER -> shuffle!
-new_inds = np.arange(0, X_task.shape[0])
-np.random.shuffle(new_inds)
-X_task = X_task[new_inds]
-labels = labels[new_inds]
-# subs = subs[new_inds]
-
-X_task = StandardScaler().fit_transform(X_task)
-
-# ARCHI task
-AT_niis, AT_labels, AT_subs = joblib.load('preload_AT_3mm')
-AT_X = nifti_masker.transform(AT_niis)
-AT_X = StandardScaler().fit_transform(AT_X)
-print('done :)')
-
-##############################################################################
-# define computation graph
+# abc
 ##############################################################################
 
 class SSEncoder(BaseEstimator):
@@ -267,125 +235,117 @@ class SSEncoder(BaseEstimator):
         else:
             return acc
 
-
 ##############################################################################
-# plot figures
+# abc
 ##############################################################################
 
-def dump_comps(masker, compressor, components, threshold=2):
-    from scipy.stats import zscore
-    from nilearn.plotting import plot_stat_map
-
-    if isinstance(compressor, basestring):
-        comp_name = compressor
-    else:
-        comp_name = compressor.__str__().split('(')[0]
-
-    for i_c, comp in enumerate(components):
-        path_mask = op.join(WRITE_DIR, '%s_%i-%i' % (comp_name,
-                                                     n_comp, i_c + 1))
-        nii_raw = masker.inverse_transform(comp)
-        nii_raw.to_filename(path_mask + '.nii.gz')
-
-        nii_z = masker.inverse_transform(zscore(comp))
-        gz_path = path_mask + '_zmap.nii.gz'
-        nii_z.to_filename(gz_path)
-        plot_stat_map(gz_path, bg_img='colin.nii', threshold=threshold,
-                      cut_coords=(0, -2, 0), draw_cross=False,
-                      output_file=path_mask + 'zmap.png')
 
 
-l1 = 0.1
-l2 = 0.1
-my_title = r'LR: L1=%.1f L2=%.1f res=3mm' % (
-    l1, l2
-)
-print(my_title)
-estimator = SSEncoder(
-    gain1=0.004,  # empirically determined by CV
-    learning_rate = np.float32(0.00001),  # empirically determined by CV,
-    max_epochs=500, l1=l1, l2=l2)
+means_path = '/git/cohort/archi/compr2task_means'
 
-estimator.fit(X_task, labels)
+mask_img = 'grey10_icbm_3mm_bin.nii.gz'
+nifti_masker = NiftiMasker(mask_img=mask_img, smoothing_fwhm=False,
+                           standardize=False)
+nifti_masker.fit()
+mask_nvox = nifti_masker.mask_img_.get_data().sum()
 
-# my_title = r'Low-rank LR: n_comp=%i L1=%.1f L2=%.1f res=10mm pca20RS' % (
-#     n_comp, l1, l2
-# )
-# FONTS = 12
-# plt.figure(facecolor='white', figsize=(8, 6))
-# plt.plot(np.log(estimator.dbg_ae_cost_), label='cost autoencoder')
-# plt.plot(estimator.dbg_lr_cost_, label='cost logistic')
-# plt.plot(estimator.dbg_acc_train_, label='score training set')
-# plt.plot(estimator.dbg_acc_val_, label='score validation set')
-# plt.plot(estimator.dbg_acc_other_ds_, label='other-datset acc')
-# plt.legend(loc='best', fontsize=12)
-# plt.xlabel('epoch', fontsize=FONTS)
-# plt.ylabel('misc', fontsize=FONTS)
-# plt.yticks(np.arange(12), np.arange(12))
-# plt.grid(True)
-# plt.title(my_title)
-# plt.show()
+# get HCP data
+HCP_contrasts = [
+    'REWARD-PUNISH', 'PUNISH-REWARD', 'SHAPES-FACES', 'FACES-SHAPES',
+    'RANDOM-TOM', 'TOM-RANDOM',
 
-fname = my_title.replace(' ', '_').replace('+', '').replace(':', '').replace('__', '_').replace('%', '')
-cur_path = op.join(WRITE_DIR, fname)
-joblib.dump(estimator, cur_path)
-# plt.savefig(cur_path + '_SUMMARY.png', dpi=200)
+    'MATH-STORY', 'STORY-MATH',
+    'T-AVG', 'F-H', 'H-F',
+    'MATCH-REL', 'REL-MATCH',
 
-V0_mat = estimator.V0s.get_value().T
-np.save(cur_path + 'V0comps', V0_mat)
+    'BODY-AVG', 'FACE-AVG', 'PLACE-AVG', 'TOOL-AVG',
+    '2BK-0BK'
+]
+mean_supp = np.zeros((18, mask_nvox))
+from nilearn.image import resample_img
+for itask, task in enumerate(HCP_contrasts):
+    cur_nii = op.join(means_path, 'mean_%s.nii.gz' % (task))
+    print(cur_nii)
+    res_nii = resample_img(cur_nii,
+        target_affine=nifti_masker.mask_img_.get_affine(),
+        target_shape=nifti_masker.mask_img_.shape)
+    task_mean = nifti_masker.transform(res_nii)
+    mean_supp[itask, :] = task_mean
+mean_supp_z = zscore(mean_supp, axis=1)
+    
+# get classification weights
+from scipy.stats import zscore
+lr_supp = np.load(op.join(LR_DIR, 'V0comps.npy'))
+lr_supp_z = zscore(lr_supp, axis=1)
 
-# dump data also as numpy array
-np.save(cur_path + 'dbg_epochs_', np.array(estimator.dbg_epochs_))
-np.save(cur_path + 'dbg_acc_train_', np.array(estimator.dbg_acc_train_))
-np.save(cur_path + 'dbg_acc_val_', np.array(estimator.dbg_acc_val_))
-np.save(cur_path + 'dbg_lr_cost_', np.array(estimator.dbg_lr_cost_))
-np.save(cur_path + 'dbg_prfs_', np.array(estimator.dbg_prfs_))
-
-
-dump_comps(nifti_masker, fname, comps, threshold=0.25)
-
+# get LR/AE weights
+WRITE_DIR = 'nips3mm_recovery'
+lambs = [0.1, 0.25, 0.5, 0.75, 1]
 import re
-pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
-dbg_epochs_ = np.load(pkgs[0])
-d = {
-    'training accuracy': '/*dbg_acc_train*.npy',
-    'accuracy val': '/*dbg_acc_val_*.npy',
-    'loss lr': '/*dbg_lr_cost_*.npy'
-}
-for k, v in d.iteritems():
-    pkgs = glob.glob(RES_NAME + v)
-    p = pkgs[0]
-    cur_values = np.load(p)
+from scipy.stats import pearsonr
+for n_comp in [5, 20, 50, 100]:
+    corr_means_lr = np.zeros((len(lambs), 18))
+    corr_means_lr_ae = np.zeros((len(lambs), 18))
+    for ilamb, lamb in enumerate(lambs):
+        pkgs = glob.glob(op.join(LR_AE_DIR, '*comp=%i_*V1comps*' % n_comp))
+        for p in pkgs:
+            lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
+            # n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
+            if lamb != lambda_param:
+                continue
 
-    cur_label = ''
-    if not '_AE' in p:
-        cur_label += 'LR only!'
-    elif 'subRS' in p:
-        cur_label += 'RSnormal'
-    elif 'spca20RS' in p:
-        cur_label += 'RSspca20'
-    elif 'pca20RS' in p:
-        cur_label += 'RSpca20'
-    cur_label += '/'
-    cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
-    cur_label += '' if '_AE' in p else '/LR only!'
+            print(p)
+            q = p.replace('V1comp', 'W0comp')
+
+            try:
+                mat_V1 = np.load(p)
+                mat_W0 = np.load(q)
+            except:
+                print('Did not find %s oder %s!' % (p, q))
+
+            lr_ae_supp = np.dot(mat_V1, mat_W0)
+            lr_ae_supp_z = zscore(lr_ae_supp, axis=1)
+
+            for i in np.arange(18):
+                r1, p1 = pearsonr(lr_ae_supp_z[i, :], mean_supp_z[i, :])
+                print('r/lrae: %.4f' % r1)
+                corr_means_lr_ae[ilamb, i] = r1
+
+                r2, p2 = pearsonr(lr_supp_z[i, :], mean_supp_z[i, :])
+                print('r/lr: %.4f' % r2)
+                corr_means_lr[ilamb, i] = r2
+
     plt.figure()
-    plt.plot(
-        dbg_epochs_,
-        cur_values,
-        label=cur_label)
-    plt.title('LR L1=0.1 L2=0.1 res=3mm')
-    plt.yticks(np.linspace(0., 1., 11))
-    plt.ylabel(k)
-    plt.xlabel('epochs')
-    plt.ylim(0., 1.05)
-    plt.grid(True)
-    plt.show()
-    plt.savefig(op.join(WRITE_DIR, k.replace(' ', '_') + '.png'))
+    corrs = np.vstack((corr_means_lr[0, :], corr_means_lr_ae))
+    plt.boxplot(corrs.T)
+    plt.ylabel('correlation r')
+    plt.title('Support Recovery: normal versus low-rank logistic regression\n'
+              '%i components' % n_comp)
+    tick_strs = [u'normal'] + [u'low-rank $λ=%.2f$' % val for val in lambs]
+    plt.xticks(np.arange(6) + 1, tick_strs, rotation=320)
+    plt.ylim(0, 1.0)
+    plt.yticks(np.linspace(0, 1., 11), np.linspace(0, 1., 11))
+    plt.tight_layout()
+    
+    out_path = op.join(WRITE_DIR, 'supp_recov_comp=%i.png' % n_comp)
+    plt.savefig(out_path)
+
+    plt.figure()
+    ind = np.arange(6)
+    width = 1.
+    colors = [(242., 62., 22.), (7., 196., 255.),
+        (7., 176., 242.), (7., 136., 217.), (7., 40., 164.), (1., 4., 64.)]
+    my_colors = [(x/256, y/256, z/256) for x, y, z in colors]
+    plt.bar(ind, np.mean(corrs, axis=1), yerr=np.std(corrs, axis=1),
+            width=width, color=my_colors)
+    plt.ylabel('correlation r (+/- SD)')
+    plt.title('Support Recovery: normal versus low-rank logistic regression\n'
+              '%i components' % n_comp)
+    plt.xticks(ind + width / 2., tick_strs, rotation=320)
+    plt.ylim(0, 1.0)
+    plt.yticks(np.linspace(0, 1., 11), np.linspace(0, 1., 11))
+    plt.tight_layout()
+    out_path2 = out_path.replace('.png', '_bars.png')
+    plt.savefig(out_path2)
 
 
-# print class weights
-pkgs = ['nips3mm_vanilla/V0comps.npy']
-comps = np.load(pkgs[0])
-new_fname = 'comps_th0.0'
-dump_comps(nifti_masker, new_fname, comps, threshold=0.0)
