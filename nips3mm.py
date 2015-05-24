@@ -1058,10 +1058,10 @@ for p in pkgs:
     plt.savefig(op.join(WRITE_DIR, new_fname))
 
 # out-of-dataset f1 score summary plots
-for n_comp in [5, 20, 50, 100]:
+for n_comp in [20, 50, 100]:
     f1_mean_per_lambda = list()
     f1_std_per_lambda = list()
-    lambs = [0.1, 0.25, 0.5, 0.75, 1.0]
+    lambs = [0.25, 0.5, 0.75, 1.0]
     for target_lambda in lambs:
         pkgs = glob.glob(RES_NAME + '/*n_comp=%i*lambda=%.2f*dbg_prfs_other_ds_.npy' %
             (n_comp, target_lambda))
@@ -1077,9 +1077,10 @@ for n_comp in [5, 20, 50, 100]:
     f1_std_per_lambda = np.array(f1_std_per_lambda)
 
     plt.figure()
-    ind = np.arange(5)
+    ind = np.arange(4)
     width = 1.
-    colors = [(7., 116., 242.),
+    colors = [#(7., 116., 242.), #(7., 176., 242.)
+        #(7., 136., 217.), (7., 40., 164.), (1., 4., 64.)]
         (7., 176., 242.), (7., 136., 217.), (7., 40., 164.), (1., 4., 64.)]
     my_colors = [(x/256, y/256, z/256) for x, y, z in colors]
     plt.bar(ind, f1_mean_per_lambda, yerr=f1_std_per_lambda,
@@ -1090,7 +1091,8 @@ for n_comp in [5, 20, 50, 100]:
     tick_strs = [u'low-rank $\lambda=%.2f$' % val for val in lambs]
     plt.xticks(ind + width / 2., tick_strs, rotation=320)
     plt.ylim(.5, 1.0)
-    plt.yticks(np.linspace(0.5, 1., 6), np.linspace(0.5, 1., 6))
+    plt.grid(True)
+    plt.yticks(np.linspace(0.5, 1., 11), np.linspace(0.5, 1., 11))
     plt.tight_layout()
     out_path2 = op.join(WRITE_DIR, 'f1_bars_comp=%i.png' % n_comp)
     plt.savefig(out_path2)

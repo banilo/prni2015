@@ -280,10 +280,10 @@ lr_supp_z = zscore(lr_supp, axis=1)
 
 # get LR/AE weights
 WRITE_DIR = 'nips3mm_recovery'
-lambs = [0.1, 0.25, 0.5, 0.75, 1]
+lambs = [0.25, 0.5, 0.75, 1]
 import re
 from scipy.stats import pearsonr
-for n_comp in [5, 20, 50, 100]:
+for n_comp in [20, 50, 100]:
     corr_means_lr = np.zeros((len(lambs), 18))
     corr_means_lr_ae = np.zeros((len(lambs), 18))
     for ilamb, lamb in enumerate(lambs):
@@ -315,6 +315,7 @@ for n_comp in [5, 20, 50, 100]:
                 print('r/lr: %.4f' % r2)
                 corr_means_lr[ilamb, i] = r2
 
+    # boxplot
     plt.figure()
     corrs = np.vstack((corr_means_lr[0, :], corr_means_lr_ae))
     plt.boxplot(corrs.T)
@@ -330,10 +331,11 @@ for n_comp in [5, 20, 50, 100]:
     out_path = op.join(WRITE_DIR, 'supp_recov_comp=%i.png' % n_comp)
     plt.savefig(out_path)
 
+    # barplot
     plt.figure()
-    ind = np.arange(6)
+    ind = np.arange(5)
     width = 1.
-    colors = [(242., 62., 22.), (7., 196., 255.),
+    colors = [(242., 62., 22.), #(7., 196., 255.),
         (7., 176., 242.), (7., 136., 217.), (7., 40., 164.), (1., 4., 64.)]
     my_colors = [(x/256, y/256, z/256) for x, y, z in colors]
     plt.bar(ind, np.mean(corrs, axis=1), yerr=np.std(corrs, axis=1),
