@@ -174,8 +174,9 @@ This architecture yields a convex optimization objective
 with unique global minimum.
 Autoencoders behave like a SPCA if shrinkage terms are added to the
 model weights in the optimization objective.
-Moreover, they behave characteristics of an ICA in case of a nonlinear convex
-function of the first-layer activation and tied weights \cite{le2011ica}.
+Moreover, they have the characteristics of an ICA in case of tied weights
+and feeding the first-layer activation into any nonlinear convex
+function \cite{le2011ica}.
 These authors further demonstrated that ICA, sparse autoencoders, and 
 sparse coding are mathematically equivalent
 under mild conditions.
@@ -183,11 +184,12 @@ Hence, autoencoders can flexibly project the neuroimaging data
 onto the main axes of variation and thus
 reverse-engineer properties of the data-generating
 neural processes \cite{olshausen96}.
+
 In the present investigation,
 a linear autoencoder will be fed by (unlabeled) rest data and
 integrated as bottleneck
 into a low-rank logistic regression fed by (labeled) task data.
-Using the chain rule for grdient descent, we can then
+Using the chain rule for gradient descent, we can then
 solve the unsupervised data representation and the supervised classification
 in an identical statistical learning problem.
 From the perspective of dictionary learning, the first layer represents
@@ -200,10 +202,10 @@ delineating a low-dimensional manifold of brain network patterns and then
 distinguishing mental tasks
 by their most discriminative linear combinations.
 %
-Theoretically, a reduced model variance should be entailed by
+Theoretically, a reduction in model variance should be achieved by
 resting-state autoencoders that
 put probability mass on the most neurobiologically
-valid members in the model space.
+valid models in the hypothesis set.
 %
 The generalization performance should consequently be improved due to 
 reduced Vapnik-Chervonenkis dimensions of the trained estimator.
@@ -283,7 +285,7 @@ In sum, the HCP rest data concatenated
 We were further interested in the utility of the optimal low-rank projection
 in one task dataset for dimensionality reduction in another task dataset.
 To this end, the HCP-derived network decompositions were used as preliminary
-step in the classifcation problem of another large cohort.
+step in the classifcation problem of another large sample.
 The ARCHI dataset \cite{pinel07} provides activity maps from
 diverse experimental tasks, including auditory and visual perception, motor action,
 reading, language comprehension and mental calculation.
@@ -308,7 +310,7 @@ from 18 diverse tasks acquired in 78 participants.
 The labeled and unlabeled data were fed into a linear statistical model
 composed of autoencoder and low-rank logistic regression.
 
-\paragraph{Unsupervised layer.}
+\paragraph{Linear autoencoder.}
 The affine autoencoder takes the input 
 $x$ and projects it into coordinates of a latent representation $z$
 by
@@ -329,12 +331,13 @@ $x' \in \mathbb{R}^{d}$ is the reconstruction vector of the original activity ma
 from the hidden variables. Further, ${W_0}$ denotes the weight matrix that
 transforms
 from input space into the hidden space (encoder),
-${W_1}$ is the weight matirx for back-projection from the hidden space to the
-output space (decoder), ${b_{W_0}}$ and ${b_{W_1}}$ are bias vectors.
+${W_1}$ is the weight matrix for back-projection from the hidden variables to the
+output space (decoder).
+${b_{W_0}}$ and ${b_{W_1}}$ are bias vectors.
 Note that ${W_0}$ and ${W_1}$ are tied,
 $W_0$ = $W_1^T$.
 The optimal model parameters ${W_0}, {b_{W_0}}, {b_{W_1}}$ are found by
-minimizing the reconstruction difference according to squared error
+minimizing the imperfection of reconstruction according to squared error
 
 \begin{eqnarray}
   {\mathcal{L_{AE}}}(x, x') = || x - x' ||^2
@@ -346,12 +349,12 @@ input and the learned representation.
 Nonlinearities were not applied on the
 activations in the first layer.
 
-\paragraph{Supervised layer.}
+\paragraph{Reduced-rank logistic regression.}
 Lossy compression by a low-dimensional bottleneck
 is also imposed by the first layer of the low-rank
 multinomial logistic regression.
 It gives the probability of an input $x$ to belong
-to a class $i$
+to a class $i \in \mathbb{N}$
 
 \begin{eqnarray}
   \begin{split}
@@ -361,7 +364,7 @@ to a class $i$
   \label{eq:lr}
 \end{eqnarray}
 
-where the matrix $V_0 \in \mathbb{R}^{dxn}$ transforms the input$x \in \mathbb{R}^{d}$
+where the matrix $V_0 \in \mathbb{R}^{dxn}$ transforms the input $x \in \mathbb{R}^{d}$
 into $n$ latent components
 and the matrix $V_1 \in \mathbb{R}^{nxc}$ projects the latent components
 onto hyperplanes that reflect $c$ class probabilities.
@@ -388,11 +391,11 @@ We thus search for a compression of the 79,941 voxel values into $n$ latent
 components that represent an optimal latent code for both
 rest and task activity data.
 Second, the objectives of the autoencoder and the low-rank
-logistic regression are combined into a common loss function.
+logistic regression are interpolated in the common loss function
 
 \begin{eqnarray}
   \begin{split}
-{arg\,min}_\theta \hspace{0.2cm} {\mathcal{L}}(\theta, \lambda) = \lambda {\mathcal{L_{LR}}}
+{arg\,min}_\theta \hspace{0.2cm} {\mathcal{L}}(\theta, \lambda) = (\lambda) {\mathcal{L_{LR}}}
 + (1-\lambda)\frac{1}{N_{X_{rest}}} {\mathcal{L_{AE}}} + \ell_1(\theta) + \ell_2(\theta)
   \label{eq:loss_equ}
 \end{split}
@@ -405,22 +408,21 @@ with respect to the (unsupervised) reconstruction error and the
 ${\mathcal{L_{AE}}}$ is devided by ${N_{X_{rest}}}$ to equilibrate both
 loss terms to the same order of magnitude.
 For parameter shrinkage, we
-impose a combination of $\ell_1$ and $\ell_2$ penalties (i.e., elasticnet)
-on the parameters $\theta$.
+impose a combination of $\ell_1$ and $\ell_2$ penalties
+$\forall p \in \theta$ (i.e., elasticnet).
 
 \paragraph{Optimization.}
 The common objective was approximated in the neuroimaging data
 by updating parameters by derivates of the 
 semi-supervised low-rank logistic regression.
 The required gradients are easily obtained by using the chain rule to
-backpropagate error derivatives first through the decoder network
-and then through the encoder network.
+backpropagate error derivatives through the linear network.
 As solver, we chose \textit{rmsprop} \cite{rmsprop},
 a mini-batch version of rprop.
 This procedure dictates an adaptive learning rate
 for each model parameter by
 scaled gradients from a running average.
-Gradient normalization by RMSprop
+Gradient normalization by rmsprop
 is known to effectively exploit curvature information.
 We opted for a small batch size of $100$, given the high degree of
 redundancy in $X_{rest}$ and $X_{task}$.
@@ -441,8 +443,8 @@ v^{(t+1)} &= \rho v^{(t+1)} + (1 - \rho)\left(\frac{\partial f}{\partial \theta}
 
 where $0 < \rho < 1$ constitutes the decay rate. $\rho$ was set to
 $0.9$ to deemphasize the magnitude of the gradient.
-Further $\alpha$ is the learning rate and $\epsilon$ a global damping factor.
-The hyper-parameter $\alpha$ was set to $0.00001$ by prior manuel
+Further, $\alpha$ is the learning rate and $\epsilon$ a global damping factor.
+The hyper-parameter $\alpha$ was set to $0.00001$ by prior manual
 cross-validation and $\epsilon$ was set to $10^{-6}$.
 %
 Note that we have also experimented with other solvers
@@ -451,7 +453,8 @@ rmsprop converged faster and with higher generalization performance.
 
 \paragraph{Hints.}
 In fact, the constraint by a rest-data autoencoder qualifies as a
-\textit{hint} rather than regularization \cite{abu1994hints}.
+\textit{hint}
+rather than regularization in a strict sense \cite{abu1994hints}.
 Its purpose is not to prevent overfitting but to introduce
 prior knowledge on known properties of the unknown target function $f$.
 Rather than only relying on input-output pairs in the learning process,
@@ -477,6 +480,21 @@ accessible online for reproducibility and reuse
 
 \begin{figure}
 \begin{centering}
+\includegraphics[width=1.00\textwidth]{figures/accuracies.png}
+\end{centering}
+\caption{\textbf{Generalization performance}
+Depicts in-sample (apply current model on training set, \textit{left column}),
+out-of-sample (current model on test set, \textit{middle column}),
+and out-of-dataset (compress other dataset using the
+learned decomposition for classification, \textit{right column}) accuracy.
+Curves for different choices of $\lambda$ as well as for ordinary
+logistic regression (\textit{yellowish})
+across iterations over the HCP task data (epochs).
+}
+\end{figure}
+
+\begin{figure}
+\begin{centering}
 \includegraphics[width=1.00\textwidth]{figures/figure_weights.jpg}
 \end{centering}
 \caption{\textbf{Comparing the interpretability of classification weights}
@@ -488,7 +506,7 @@ implementation but without bottleneck layer or autoencoder),
 (latent components $n=20$, $\lambda=0.5$, $\ell_1=0.1$, $\ell_2=0.1$),
 \textit{right column:} voxel-wise average of whole-brain activity
 across the first-level activity maps from 498 participants
-(tresholded at 0.25).
+(thresholded at 0.25).
 All values z-scored.
 }
 \end{figure}
@@ -501,7 +519,7 @@ All values z-scored.
 \textit{Upper row:} the fit-for-purpose of the classification models
 is quantified by linear correlation between the
 z-scored average task image and the z-scored weights from
-ordinary (\texit{red}) and present (\textit{blue colors}) logistic
+ordinary (\textit{red}) and present (\textit{blue colors}) logistic
 regression ($\lambda=0.25, 0.50, 0.75, 1.00$).
 \textit{Lower row:} ordinary logistic regression is applied to the
 ARCHI dataset after projection into the latent dimensions learned from
@@ -509,23 +527,30 @@ the HCP task data.
 }
 \end{figure}
 
-
-\bigskip
-
 \section{Experimental Results}
-
+\paragraph{General}
+\begin{itemize}
+\item{20 components: high bias/low variance
+100 compoentens: low bias/high variance}
+\end{itemize}
 
 \paragraph{Classification performance}
 \begin{itemize}
   \item{This was evaluated by the prediction
-accuracy on a validation set (20\% of the training data) at each iteration.}
+accuracy on a validation set (20\% of the training data) at each iteration
+over the ARCHI task data}
+  \item{the less lambda, the faster the convergence, with small differences
+  though; smaller differences with larger number of components}
+  \item{both 20 and 100 hidden components achieve 97\% out-of-sample
+  accuracy}
+  \item{ordinary logistic regression converges faster but with stagnation at
+  92\% out-of-sample accuracy}
+  \item{classification at chance 6\% in case of lambda==0 because 
+  only the unsupervised layer of the estimator is optimized}
+  \item{important: the thus only resting-state-trained decomposition achieves
+  the same usefulness in the ARCHI classification than the
+  decomposition derived in semi-supervised fashion}
 \end{itemize}
-
-
-20 components: high bias/low variance
-100 compoentens: low bias/high variance
-
-
 
 \paragraph{Support recovery}
 \begin{itemize}
@@ -544,16 +569,17 @@ accuracy on a validation set (20\% of the training data) at each iteration.}
 
 \paragraph{Anecdotal observations}
 \begin{itemize}
-  \item{Modifications of the mode that did not improve the genralization performacne:
-  dropo-out, input corruption (p=0.1/0.3/0.5), relus}
+  \item{Modifications of the modek that did not improve the generalization performance:
+  drop-out, input corruption (p=0.1/0.3/0.5), RELUs}
   \item{no penalty or only L1 or L2 penalty generally yielded worse
   generalization performance}
-  \item{low L1/L2 values (0.1) yielded better results
+  \item{low L1/L2 penalties (0.1) yielded better results
   than higher values (0.3, 0.5)}
   \item{``pretraining'' of the bottleneck by settings weights to
-  preliminary PCA, SPCA or ICA weights, neither for autoencoder pretraining }
-  \item{present approach better than first first PCA, SPCA or ICA and
-  subsequently Logreg on loadings}
+  preliminary PCA, SPCA or ICA weights did not give better accuracies,
+  neither for autoencoder pretraining }
+  \item{present approach better than first PCA, SPCA or ICA and
+  subsequently Logreg on loadings, even if each on the whole data}
   \item{introducing a
   nonlinearity (sigmoid, tanh, softplus) into the system
   did not improve predictive accuracy but
@@ -587,92 +613,49 @@ accuracy on a validation set (20\% of the training data) at each iteration.}
 \section{Discussion and Conclusion}
 %
 There is an increasing occurrence of high-dimensional problems in the
-neuroimaging domain. Yet, there is also much uncertainty about the
+neuroimaging domain. Yet, there is also considerable uncertainty about the
 most pertinent representation
 of neural activation information.
 This calls for new statistical learning algorithms that
-behave well in large cohorts. Ideally, they should acknowledge
-and exploit existing widely-accepted neuroscientific knowledge.
-In the present work, we propose such an estimator that learns
+behave well in large samples. Ideally, they should acknowledge
+and exploit widely-accepted neuroscientific knowledge.
+We here propose such an estimator that learns
 dimensionality reduction
-in a neurobiologically valid and interpretable fashion.
-%
-Unsupervised projection models into a lower-dimensional space and
-supervised logistic-regression models are learned in concert
-in a same parameter gradient descent.
-Brain
-network decompositions are thus exposed that explain task-descriminative spatial
-patterns of neural activity.
+in a neurobiological and interpretable fashion.
 
+Using the flexibility of autoencoders, we
+learn the optimal decomposition from high-dimensional
+voxel brain space into the most important activation patterns for a
+statistical learning question of interest.
+The higher generalization accuracy and support recovery, comparing to
+state-of-the-art classification, hold potential
+for adoption in various every-day analyses in the neuroimaging field.
+Besides increased performance, these models are more interpretable by
+automatically learning a mapping to and from a brain-network space.
+This domain-specifc classification algorithms
+encourages departure from the artificial and statistically
+less attractive voxel space.
+From a neurobiological perspective,
+we demonstrate that neural activity underlying defined mental operations
+can readily be explained by linear combinations of the main activation
+patterns. That is,
+neural activity data as measured by fMRI probably concentrate near
+a low-dimensional manifold of brain networks.
+These fundamental building blocks of brain organization might
+facilitate the quest for the cognitive primitives of
+human thought.
+Moreover, data-intense neuroimaging studies in the future can be made tractable
+by reduction to the neurobiological essence.
+This can be particulary useful in multi-center clinical studies
+on the prediction of disease trajectories and drug treatment responses
+in psychiatric and neurological populations.
+We hope that these first steps stimulate development towards
+powerful semi-supervised classification methods.
 
-classifier that operates in a (sparse) network space, rather than in a voxel space.
-domain-specifc classification algorithms
-
--hypothesis space includes sparse PCA and PCA but not ICA since no
-linearity
-
--respect structure in the fMRI data
-
-- We hope that these results stimulate the development of
-even more powerful semi-supervised classification methods
-
-learn optimal parameters
-
-
-- improve computational tractability, prediction accuracy, and interpretability
-neuroimaging datasets
-- does it produce testable predictions for targeted experimental investigation?
--> we can test predictive value of network-network architectures across
-mental domains.
-
-open window to study the correspondence between brain dynamics during
-every-day mind-wandering and task-focused brain states.
-
-
-repertoire of mental operations that the human brain can perform
-
-large quantities of neuroimaging data
-logistic regression in an autoencoder paradigm
-
-automatically learn a mapping to and from a brain-network space
-
-statistical structure
-
-PCA:
-captures structure in the data that is well described by Gaussian clouds,
-linear pair-wise correlations are most important form of statistical
-dependence/orthongonal components
-
--> BOLD images can readily be reduced to linear combinations of
-sparse spatial structures
-
-scale different classificatiuon architectures to large neuroimaging data
-
-task data might concentrate near a low-dimensional manifold of brain networks
-
-neurobiolgocial fidelity
-
-entities of the neuroimaging domain
-
-put probability mas shwere we expeted neurobiological strucuture
-
-canonical set of brain networks
-
-new baseline
-
-FUTURE
-link the restings-tate component to the pattern sof cognitive proceses
-reduce information von resting-state data in neurological and psychiatric
-populations for discovery of neurobiological sub-groups as well as
-prediction of disease trajectories and drug responses
-
-
-%
 \paragraph{Acknowledgment}
 {\small
 Data were provided the Human Connectome Project. The study was supported
-by the German National Academic Foundation (D.B.).
-}
+by the German National Academic Foundation (D.B.)}
 
 \small
 \bibliographystyle{splncs03}
