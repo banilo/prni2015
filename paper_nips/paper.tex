@@ -72,6 +72,9 @@ neural structure or testing of neural structure associated with mental tasks.
 %
 However, modelling the neural correlates of mental tasks hinges
 on the pertinence of the assumed neurobiological structure.
+%XXX: this last statement is not cristal clear.
+%
+% XXX: Big gap between these two sentences. It is unclear what you call 'supervised' or 'unsupervised'.
 %
 We therefore propose to solve the unsupervised dimensionality reduction
 and supervised task classification in
@@ -133,21 +136,29 @@ All these methods are applied to labeled task data that capture brain dynamics
 during stimulus-guided behavior.
 Two important conclusions can be drawn.
 First, the mentioned supervised neuroimaging analyses operate
-without exception in a voxel space. This ignores the fact that the BOLD
+without exception in a voxel space. 
+%XXX:not exactly: the DCM is based on ROIs typically. PPI also ? 
+
+This ignores the fact that the BOLD
 signal exhibits distributed spatial activation patterns.
 Second, existing neuroimaging analyses do not acknowledge the fact that the
 task-induced changes of the BOLD signal typically amount to less than 5\%
-of baseline activity \cite{fox07}. They do thus not exploit the high similarity
+of baseline activity \cite{fox07}. 
+%
+% XXX I think that this is wrong. Moreover, it is not completely  clear how crucial this is. I think that there are better arguments to introduce the joint analysis of rest and task.
+% For example, the existence of abundant RS data is an important practical reson to consider them. 'Better sample the manifold of brain states'
+% 
+They do thus not exploit the high similarity
 of BOLD dynamics in the human brain at rest and during experimental tasks,
 as observed using ICA \cite{smith2009}.
 
-Both these biological properties can be conjointly exploited in a 
-semi-supervised (i.e., use rest and task data)
+Both these biological properties can be conjointly exploited in a mixed
+ (i.e., use rest and task data)
 low-rank (i.e., perform network decomposition)
 approach.
 %
 The integration of brain-network discovery into a 
-supervised classification framework should identify the most relevant
+supervised classification formally yields a semi-supervised learning framework that should identify the most relevant
 neurobiological structure for the prediction problem at hand.
 %
 Autoencoders suggest themselves because they can emulate
@@ -165,7 +176,7 @@ in case of one linear hidden layer and a squared error loss
   \centering
   %\captionsetup{labelformat=nonumber}
     \includegraphics[width=0.40\textwidth]{figures/figure1.png}
-  \caption {\textbf{Architecture}
+  \caption {\textbf{Architecture. XXX develop the cpation. Main msg ?}
   }
 \end{wrapfigure}
 %
@@ -176,22 +187,26 @@ Autoencoders behave like a SPCA if shrinkage terms are added to the
 model weights in the optimization objective.
 Moreover, they have the characteristics of an ICA in case of tied weights
 and feeding the first-layer activation into any nonlinear convex
+%% ICA contrasts are rarely convex ?!?
 function \cite{le2011ica}.
 These authors further demonstrated that ICA, sparse autoencoders, and 
 sparse coding are mathematically equivalent
 under mild conditions.
+%
 Hence, autoencoders can flexibly project the neuroimaging data
 onto the main axes of variation and thus
-reverse-engineer properties of the data-generating
+reverse-engineer properties of the underlying
 neural processes \cite{olshausen96}.
 
 In the present investigation,
 a linear autoencoder will be fed by (unlabeled) rest data and
 integrated as bottleneck
 into a low-rank logistic regression fed by (labeled) task data.
-Using the chain rule for gradient descent, we can then
-solve the unsupervised data representation and the supervised classification
-in an identical statistical learning problem.
+% Using the chain rule for gradient descent, 
+We can then solve the unsupervised data representation and the
+supervised classification in an identical statistical learning
+problem.
+%
 From the perspective of dictionary learning, the first layer represents
 the discovered set of basis functions
 whose linear combinations are learned
@@ -209,6 +224,7 @@ valid models in the hypothesis set.
 %
 The generalization performance should consequently be improved due to 
 reduced Vapnik-Chervonenkis dimensions of the trained estimator.
+% I would not make direct claims on *VC* dimension, since you don't consider it explictly
 %
 Taken together,
 the important modes of variation in brain dynamics and
@@ -244,7 +260,7 @@ gradient unwarping, motion correction, fieldmap-based EPI distortion
 correction, brain-boundary-based registration of EPI to structural
 T1-weighted scans, nonlinear (FNIRT) registration into MNI space,
 and grand-mean intensity normalization. Activation maps were spatially
-smoothed by a Gaussian kernel of 4mm (FWHM). A GLM was
+smoothed with a Gaussian kernel of 4mm (FWHM). A GLM was
 implemented by FILM from the FSL suite with model regressors from convolution
 with a “canonical” hemodynamic response function and from temporal derivatives.
 HCP tasks were conceived to modulate activation
@@ -252,6 +268,9 @@ in a maximum of different brain regions and neural systems. Indeed, at
 least 70\% of the participants showed consistent brain activity in
 contrasts from the task battery, which certifies excellent
 coverage \cite{barch2013}.
+%
+% No, this is not what is called 'coverage'
+%
 In sum, the HCP task data incorporated 8650 first-level activity maps
 from 18 diverse paradigms administered to 498 participants (2 removed
 due to incomplete data).
@@ -328,7 +347,9 @@ voxel values from each
 rest map, $z \in \mathbb{R}^{n}$ is the $n$ hidden dimensions (i.e.,
 distributed neural activity patterns), and 
 $x' \in \mathbb{R}^{d}$ is the reconstruction vector of the original activity map
-from the hidden variables. Further, ${W_0}$ denotes the weight matrix that
+from the hidden variables. 
+% XXX use bold letters for vectors and matrices
+Further, ${W_0}$ denotes the weight matrix that
 transforms
 from input space into the hidden space (encoder),
 ${W_1}$ is the weight matrix for back-projection from the hidden variables to the
@@ -359,7 +380,7 @@ to a class $i \in \mathbb{N}$
 \begin{eqnarray}
   \begin{split}
     P(Y=i|x, V_0,V_1,b_{V_0}, b_{V_1}) &= softmax_i(V_1 (V_0 x + b_{V_0}) + b_{V_1}) \\
-    &= \frac {e^{V_1_i (V_0_i x + b_{V_0}_i) + b_{V_1}_i}} {\sum_j e^{V_1_j (V_0_j x + b_{V_0}_j) + b_{V_1}_j}}            
+    &= \frac {e^{V_{1i} (V_{0i} x + b_{V_{0i}}) + b_{V_{1i}}}} {\sum_j e^{V_{1j} (V_{0j} x + b_{V_{0j}}) + b_{V_{1j}}}}            
   \end{split}
   \label{eq:lr}
 \end{eqnarray}
@@ -412,8 +433,12 @@ impose a combination of $\ell_1$ and $\ell_2$ penalties
 $\forall p \in \theta$ (i.e., elasticnet).
 
 \paragraph{Optimization.}
-The common objective was approximated in the neuroimaging data
-by updating parameters by derivates of the 
+The common objective was approximated 
+% XXX why 'approximated' ?
+in the neuroimaging data
+by updating parameters by derivates 
+% XXX derivates ???
+of the 
 semi-supervised low-rank logistic regression.
 The required gradients are easily obtained by using the chain rule to
 backpropagate error derivatives through the linear network.
@@ -444,8 +469,7 @@ v^{(t+1)} &= \rho v^{(t+1)} + (1 - \rho)\left(\frac{\partial f}{\partial \theta}
 where $0 < \rho < 1$ constitutes the decay rate. $\rho$ was set to
 $0.9$ to deemphasize the magnitude of the gradient.
 Further, $\alpha$ is the learning rate and $\epsilon$ a global damping factor.
-The hyper-parameter $\alpha$ was set to $0.00001$ by prior manual
-cross-validation and $\epsilon$ was set to $10^{-6}$.
+The hyper-parameter $\alpha$ was set to $0.00001$ by prior studies and $\epsilon$ was set to $10^{-6}$.
 %
 Note that we have also experimented with other solvers
 (stochastic gradient descent, adadelta, and adagrad) but found that
@@ -477,7 +501,9 @@ accessible online for reproducibility and reuse
 % url{http://github.com/banilo/nips2015}.
 
 \bigskip
-
+% XXX the accuracy figure is not very nice. export is in pdf.
+% XXX change the titles. remove the resolution information from the title.
+% XXX larger legends. they're not readable currently
 \begin{figure}
 \begin{centering}
 \includegraphics[width=1.00\textwidth]{figures/accuracies.png}
@@ -490,6 +516,7 @@ learned decomposition for classification, \textit{right column}) accuracy.
 Curves for different choices of $\lambda$ as well as for ordinary
 logistic regression (\textit{yellowish})
 across iterations over the HCP task data (epochs).
+XXX: Message ??
 }
 \end{figure}
 
@@ -507,11 +534,13 @@ implementation but without bottleneck layer or autoencoder),
 \textit{right column:} voxel-wise average of whole-brain activity
 across the first-level activity maps from 498 participants
 (thresholded at 0.25).
-All values z-scored.
+All values are z-scored.
+% XXX: Why is the z-map sparse ?!? 
 }
 \end{figure}
 
 \begin{figure}
+% XXX: figure not readable
 \begin{centering}
 \includegraphics[width=1.00\textwidth]{figures/support_bars.png}
 \end{centering}
@@ -606,14 +635,19 @@ over the ARCHI task data}
   non-congruent structure emerges in the early (\textit{blue}) and
   lateral (\textit{red}) visual cortex
   (\textit{right column}). Matrix weights were z-scored.
-  }
+% XXX To me there is no clear message here. You can always interpolate between arbitrary maps... What does this bring to you ? 
+ }
 \end{figure}
 
 
 \section{Discussion and Conclusion}
 %
 There is an increasing occurrence of high-dimensional problems in the
-neuroimaging domain. Yet, there is also considerable uncertainty about the
+neuroimaging domain. 
+%
+% XXX: meaningless and useless for your work
+%
+Yet, there is also considerable uncertainty about the
 most pertinent representation
 of neural activation information.
 This calls for new statistical learning algorithms that
@@ -622,6 +656,7 @@ and exploit widely-accepted neuroscientific knowledge.
 We here propose such an estimator that learns
 dimensionality reduction
 in a neurobiological and interpretable fashion.
+% You really should emphasize the problem of accumulating data and knowledge which is much more interesting. Cite Yannick. 
 
 Using the flexibility of autoencoders, we
 learn the optimal decomposition from high-dimensional
