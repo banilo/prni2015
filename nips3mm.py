@@ -447,7 +447,7 @@ def dump_comps(masker, compressor, components, threshold=2):
                       cut_coords=(0, -2, 0), draw_cross=False,
                       output_file=path_mask + 'zmap.png')
 
-n_comps = [100]
+n_comps = [20]
 # n_comps = [40, 30, 20, 10, 5]
 for n_comp in n_comps:
     # for lambda_param in [0]:
@@ -462,7 +462,7 @@ for n_comp in n_comps:
             n_hidden=n_comp,
             gain1=0.004,  # empirically determined by CV
             learning_rate = np.float32(0.00001),  # empirically determined by CV,
-            max_epochs=500, l1=l1, l2=l2, lambda_param=lambda_param)
+            max_epochs=2500, l1=l1, l2=l2, lambda_param=lambda_param)
         
         estimator.fit(X_rest, X_task, labels)
 
