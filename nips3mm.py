@@ -138,7 +138,8 @@ class SSEncoder(BaseEstimator):
         compr_matrix = self.W0s.get_value().T  # currently best compression
         AT_X_compr = np.dot(compr_matrix, AT_X.T).T
         clf = LogisticRegression(penalty='l1')
-        folder = StratifiedShuffleSplit(y=AT_labels, n_iter=5, test_size=0.2)
+        folder = StratifiedShuffleSplit(y=AT_labels, n_iter=5, test_size=0.2,
+                                        random_state=42)
 
         acc_list = []
         prfs_list = []
@@ -451,7 +452,7 @@ n_comps = [20]
 # n_comps = [40, 30, 20, 10, 5]
 for n_comp in n_comps:
     # for lambda_param in [0]:
-    for lambda_param in [0.1]:
+    for lambda_param in [0.50]:
         l1 = 0.1
         l2 = 0.1
         my_title = r'Low-rank LR + AE (combined loss, shared decomp): n_comp=%i L1=%.1f L2=%.1f lambda=%.2f res=3mm spca20RS' % (
@@ -462,7 +463,7 @@ for n_comp in n_comps:
             n_hidden=n_comp,
             gain1=0.004,  # empirically determined by CV
             learning_rate = np.float32(0.00001),  # empirically determined by CV,
-            max_epochs=2500, l1=l1, l2=l2, lambda_param=lambda_param)
+            max_epochs=500, l1=l1, l2=l2, lambda_param=lambda_param)
         
         estimator.fit(X_rest, X_task, labels)
 
