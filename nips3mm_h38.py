@@ -450,11 +450,11 @@ def dump_comps(masker, compressor, components, threshold=2):
                       output_file=path_mask + 'zmap.png')
 
 from matplotlib import pylab as plt
-n_comps = [20]
+n_comps = [100]
 # n_comps = [40, 30, 20, 10, 5]
 for n_comp in n_comps:
     # for lambda_param in [0]:
-    for lambda_param in [0.5, 0, 0.75, 1]:
+    for lambda_param in [0.25]:
         l1 = 0.1
         l2 = 0.1
         my_title = r'Low-rank LR + AE (combined loss, shared decomp): n_comp=%i L1=%.1f L2=%.1f lambda=%.2f res=3mm spca20RS' % (

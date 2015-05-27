@@ -272,9 +272,10 @@ class SSEncoder(BaseEstimator):
 # plot figures
 ##############################################################################
 
-def dump_comps(masker, compressor, components, threshold=2):
+def dump_comps(masker, compressor, components, threshold=2, fwhm=None):
     from scipy.stats import zscore
     from nilearn.plotting import plot_stat_map
+    from nilearn.image import smooth_img
 
     if isinstance(compressor, basestring):
         comp_name = compressor
@@ -293,7 +294,14 @@ def dump_comps(masker, compressor, components, threshold=2):
         plot_stat_map(gz_path, bg_img='colin.nii', threshold=threshold,
                       cut_coords=(0, -2, 0), draw_cross=False,
                       output_file=path_mask + 'zmap.png')
-
+                      
+        # optional: do smoothing
+        if fwhm is not None:
+            nii_z_fwhm = smooth_img(nii_z, fwhm=fwhm)
+            plot_stat_map(nii_z_fwhm, bg_img='colin.nii', threshold=threshold,
+                          cut_coords=(0, -2, 0), draw_cross=False,
+                          output_file=path_mask +
+                          ('zmap_%imm.png' % fwhm))
 
 l1 = 0.1
 l2 = 0.1
@@ -388,4 +396,4 @@ for k, v in d.iteritems():
 pkgs = ['nips3mm_vanilla/V0comps.npy']
 comps = np.load(pkgs[0])
 new_fname = 'comps_th0.0'
-dump_comps(nifti_masker, new_fname, comps, threshold=0.0)
+dump_comps(nifti_masker, new_fname, comps, threshold=0.0, fwhm=4)

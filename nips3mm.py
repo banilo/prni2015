@@ -426,9 +426,10 @@ class SSEncoder(BaseEstimator):
 # plot figures
 ##############################################################################
 
-def dump_comps(masker, compressor, components, threshold=2):
+def dump_comps(masker, compressor, components, threshold=2, fwhm=None):
     from scipy.stats import zscore
     from nilearn.plotting import plot_stat_map
+    from nilearn.image import smooth_img
 
     if isinstance(compressor, basestring):
         comp_name = compressor
@@ -447,6 +448,14 @@ def dump_comps(masker, compressor, components, threshold=2):
         plot_stat_map(gz_path, bg_img='colin.nii', threshold=threshold,
                       cut_coords=(0, -2, 0), draw_cross=False,
                       output_file=path_mask + 'zmap.png')
+                      
+        # optional: do smoothing
+        if fwhm is not None:
+            nii_z_fwhm = smooth_img(nii_z, fwhm=fwhm)
+            plot_stat_map(nii_z_fwhm, bg_img='colin.nii', threshold=threshold,
+                          cut_coords=(0, -2, 0), draw_cross=False,
+                          output_file=path_mask +
+                          ('zmap_%imm.png' % fwhm))
 
 n_comps = [20]
 # n_comps = [40, 30, 20, 10, 5]
@@ -995,12 +1004,14 @@ for n_comp in n_comps:
                 (target_lambda, n_comp)))
 
 # print network components (1st layer)
+from nilearn.image import smooth_img
 n_comp = 20
+lmbd = 0.25
 pkgs = glob.glob(RES_NAME + '/*W0comps.npy')
 for p in pkgs:
     lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
     n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
-    if n_comp != n_hidden:
+    if n_comp != n_hidden or lambda_param != lmbd:
         continue
         
     new_fname = 'comps_n=%i_lambda=%.2f_th0.0' % (n_hidden, lambda_param)
@@ -1022,14 +1033,17 @@ for p in pkgs:
     comps = np.dot(np.load(q), np.load(p))
         
     new_fname = 'comps_n=%i_lambda=%.2f_th0.0' % (n_hidden, lambda_param)
-    dump_comps(nifti_masker, new_fname, comps, threshold=0.0)
+    dump_comps(nifti_masker, new_fname, comps, threshold=0.0, fwhm=4)
+    
 
 # print LR decision matrix (2nd layer)
+n_comp = 20
+lmbd = 0.5
 pkgs = glob.glob(RES_NAME + '/*V1comps.npy')
 for p in pkgs:
     lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
     n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
-    if n_comp != n_hidden:
+    if n_comp != n_hidden or lambda_param != lmbd:
         continue
     print p
     
