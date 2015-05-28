@@ -8,6 +8,9 @@ preliminary conclusion:
 questions:
 - the AE cost is much bigger, is it ok to T.log() that?
 No because it renders the objective function non-convex.
+- compare to nonlinearity + PCA only
+- how to genreate examples from 100 last model paramters during the
+gradient descent?
 """
 
 print __doc__
@@ -18,7 +21,6 @@ import numpy as np
 import glob
 from scipy.linalg import norm
 import nibabel as nib
-from matplotlib import pylab as plt
 from sklearn.grid_search import RandomizedSearchCV
 from sklearn.base import BaseEstimator
 from sklearn.preprocessing import StandardScaler
@@ -27,15 +29,20 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import confusion_matrix
 import theano
 import theano.tensor as T
+from matplotlib import pylab as plt
 print('Running THEANO on %s' % theano.config.device)
 from nilearn.image import concat_imgs
 import joblib
 import time
 
-RES_NAME = 'nips3mm_h38'
+RES_NAME = 'nips3mm_scarcity'
 WRITE_DIR = op.join(os.getcwd(), RES_NAME)
 if not op.exists(WRITE_DIR):
     os.mkdir(WRITE_DIR)
+
+MAX_SAMPLES = 2000
+MAX_REST_SAMPLES = 1000
+MAX_TASK_SAMPLES = 100
 
 ##############################################################################
 # load+preprocess data
@@ -50,7 +57,7 @@ mask_nvox = nifti_masker.mask_img_.get_data().sum()
 print('Loading data...')
 
 # ARCHI task
-X_task, labels = joblib.load('preload_HT38_3mm')
+X_task, labels = joblib.load('preload_HT_3mm')
 
 labels = np.int32(labels)
 
@@ -72,15 +79,6 @@ del rs_spca_niis
 del rs_spca_data
 
 X_task = StandardScaler().fit_transform(X_task)
-
-# HACK!
-multiplier = np.int(np.ceil(X_task.shape[0] /
-                    (X_rest.shape[0] * 1.)))  # how much do we need to expand?
-X_rest = np.repeat(X_rest, multiplier, axis=0)
-new_inds2 = np.arange(0, X_rest.shape[0])
-np.random.shuffle(new_inds2)
-X_rest = X_rest[new_inds2]  # shuffle the neighboring elements (due to repeat)
-X_rest = X_rest[:X_task.shape[0]]  # shrink to size of task dataset
 X_rest = StandardScaler().fit_transform(X_rest)
 
 # ARCHI task
@@ -141,7 +139,8 @@ class SSEncoder(BaseEstimator):
         compr_matrix = self.W0s.get_value().T  # currently best compression
         AT_X_compr = np.dot(compr_matrix, AT_X.T).T
         clf = LogisticRegression(penalty='l1')
-        folder = StratifiedShuffleSplit(y=AT_labels, n_iter=5, test_size=0.2)
+        folder = StratifiedShuffleSplit(y=AT_labels, n_iter=5, test_size=0.2,
+                                        random_state=42)
 
         acc_list = []
         prfs_list = []
@@ -249,7 +248,7 @@ class SSEncoder(BaseEstimator):
         #     updates=updates)
 
         # computation graph: logistic regression
-        clf_n_output = 38  # number of labels
+        clf_n_output = 18  # number of labels
         my_y = T.ivector(name='y')
 
         bV0_vals = np.zeros(self.n_hidden).astype(np.float32)
@@ -335,6 +334,18 @@ class SSEncoder(BaseEstimator):
                 hs, mins = divmod(total_mins, 60)
                 print("Max estimated duration: %i hours and %i minutes" % (hs, mins))
 
+            # resample + restrict task and rest data
+            inds_rest = np.random.randint(0, MAX_REST_SAMPLES, MAX_SAMPLES)
+            assert np.bincount(inds_rest).sum() == MAX_SAMPLES
+            X_rest_s.set_value(np.float32(X_rest[inds_rest]), borrow=False)
+            ae_train_samples = MAX_SAMPLES
+
+            inds_task = np.random.randint(0, MAX_TASK_SAMPLES, MAX_SAMPLES)
+            assert np.bincount(inds_task).sum() == MAX_SAMPLES
+            X_train_s.set_value(np.float32(X_train[inds_task]), borrow=False)
+            y_train_s.set_value(np.int32(y_train[inds_task]), borrow=False)
+            lr_train_samples = MAX_SAMPLES
+
             # AE
             # if i_epoch % 2 == 0:  # every second time
             #if False:
@@ -387,7 +398,7 @@ class SSEncoder(BaseEstimator):
                 print('out-of-dataset acc: %.2f' % od_acc)
                 
             # save paramters from last 100 iterations
-            if i_epoch > (self.max_epochs - 499):
+            if i_epoch > (self.max_epochs - 100):
                 print('Param pool!')
                 param_pool = self.get_param_pool()
                 self.params_from_last_iters.append(param_pool)
@@ -454,42 +465,28 @@ n_comps = [20]
 # n_comps = [40, 30, 20, 10, 5]
 for n_comp in n_comps:
     # for lambda_param in [0]:
-    for lambda_param in [1.0]:
+    for lambda_param in [0.5]:
         l1 = 0.1
         l2 = 0.1
-        my_title = r'Low-rank LR + AE (combined loss, shared decomp): n_comp=%i L1=%.1f L2=%.1f lambda=%.2f res=3mm spca20RS' % (
-            n_comp, l1, l2, lambda_param
+        my_title = r'Low-rank LR + AE (combined loss, shared decomp): n_comp=%i L1=%.1f L2=%.1f lambda=%.2f res=3mm spca20RS max%i r%i t%i' % (
+            n_comp, l1, l2, lambda_param,
+            MAX_SAMPLES,
+            MAX_REST_SAMPLES,
+            MAX_TASK_SAMPLES
         )
         print(my_title)
         estimator = SSEncoder(
             n_hidden=n_comp,
             gain1=0.004,  # empirically determined by CV
             learning_rate = np.float32(0.00001),  # empirically determined by CV,
-            max_epochs=300, l1=l1, l2=l2, lambda_param=lambda_param)
-
+            max_epochs=500, l1=l1, l2=l2, lambda_param=lambda_param)
+        
         estimator.fit(X_rest, X_task, labels)
-
-        # my_title = r'Low-rank LR: n_comp=%i L1=%.1f L2=%.1f res=10mm pca20RS' % (
-        #     n_comp, l1, l2
-        # )
-        # FONTS = 12
-        # plt.figure(facecolor='white', figsize=(8, 6))
-        # plt.plot(np.log(estimator.dbg_ae_cost_), label='cost autoencoder')
-        # plt.plot(estimator.dbg_lr_cost_, label='cost logistic')
-        # plt.plot(estimator.dbg_acc_train_, label='score training set')
-        # plt.plot(estimator.dbg_acc_val_, label='score validation set')
-        # plt.plot(estimator.dbg_acc_other_ds_, label='other-datset acc')
-        # plt.legend(loc='best', fontsize=12)
-        # plt.xlabel('epoch', fontsize=FONTS)
-        # plt.ylabel('misc', fontsize=FONTS)
-        # plt.yticks(np.arange(12), np.arange(12))
-        # plt.grid(True)
-        # plt.title(my_title)
-        # plt.show()
 
         fname = my_title.replace(' ', '_').replace('+', '').replace(':', '').replace('__', '_').replace('%', '')
         cur_path = op.join(WRITE_DIR, fname)
         joblib.dump(estimator, cur_path)
+        # estimator = joblib.load(cur_path)
         # plt.savefig(cur_path + '_SUMMARY.png', dpi=200)
         
         # dump data also as numpy array
@@ -515,53 +512,86 @@ STOP_CALCULATION
 
 # equally scaled plots
 import re
-pkgs = glob.glob(RES_NAME + '/*dbg_epochs_*.npy')
+pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
 dbg_epochs_ = np.load(pkgs[0])
-n_comps = [100]
-pkgs = glob.glob(RES_NAME + '/*dbg_acc_train_*.npy')
-for n_comp in n_comps:
-    plt.figure()
-    for p in pkgs:
-        lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,3})_', p).group('comp'))
-        if n_comp != n_hidden:
-            continue
-        
-        dbg_acc_train_ = np.load(p)
-        
-        cur_label = 'n_comp=%i' % n_hidden
-        cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
-        cur_label += '/'
-        if not '_AE' in p:
-            cur_label += 'LR only!'
-        elif 'subRS' in p:
-            cur_label += 'RSnormal'
-        elif 'pca20RS' in p:
-            cur_label += 'RSpca20'
-        cur_label += '/'
-        cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
-        cur_label += '' if '_AE' in p else '/LR only!'
-        plt.plot(
-            dbg_epochs_,
-            dbg_acc_train_,
-            label=cur_label)
-    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=10mm combined-loss')
-    plt.legend(loc='lower right', fontsize=9)
-    plt.yticks(np.linspace(0., 1., 11))
-    plt.ylabel('training accuracy')
-    plt.xlabel('epochs')
-    plt.ylim(0., 1.)
-    plt.grid(True)
-    plt.show()
-    plt.savefig(op.join(WRITE_DIR, 'accuracy_train_%icomps.png' % n_comp))
+dbg_epochs_ = np.load(pkgs[0])
 
+d = {
+    'in-sample accuracy': '/*dbg_acc_train*.npy',
+    'out-of-sample accuracy': '/*dbg_acc_val_*.npy',
+    'accuracy other ds': '/*dbg_acc_other_ds_*.npy',
+    # 'loss ae': '/*dbg_ae_cost_*.npy',
+    # 'loss lr': '/*dbg_lr_cost_*.npy',
+    # 'loss combined': '/*dbg_combined_cost_*.npy'
+}
+
+path_main = 'nips3mm_scarcity'
+
+for k, v in d.iteritems():
+    pkgs = glob.glob(RES_NAME + v)
+    for n_comp in n_comps:
+        plt.figure()
+        for p in pkgs:
+            lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
+            # n_hidden = int(re.search('comp=(?P<comp>.{1,2,3})_', p).group('comp'))
+            n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
+            max_samples = int(re.search('max(.{1,4})_', p).group(1))
+            rest_samples = int(re.search('_r(.{2,4})_', p).group(1))
+            task_samples = int(re.search('_t(.{2,4})dbg', p).group(1))
+            if n_comp != n_hidden:
+                continue
+
+            if (task_samples != 1000):
+                continue
+
+            cur_values = np.load(p)
+
+            cur_label = 'n_comp=%i' % n_hidden
+            cur_label += '/'
+            cur_label += 'lambda=%.2f' % lambda_param
+            cur_label += '/'
+            cur_label += 'max=%i' % max_samples
+            cur_label += '/'
+            cur_label += 'nrest%i' % rest_samples
+            cur_label += '/'
+            cur_label += 'ntask=%i' % task_samples
+            plt.plot(
+                dbg_epochs_,
+                cur_values,
+                label=cur_label)
+        # if k == 'training accuracy' or k == 'accuracy val':
+        #     van_pkgs = glob.glob(path_main + v)
+        #     vanilla_values = np.load(van_pkgs[0])
+        #     plt.plot(
+        #         dbg_epochs_,
+        #         vanilla_values,
+        #         label='LR')
+        plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss')
+        plt.legend(loc='lower right', fontsize=9)
+        plt.yticks(np.linspace(0., 1., 11))
+        plt.ylabel(k)
+        plt.xlabel('epochs')
+        plt.ylim(0., 1.05)
+        plt.grid(True)
+        plt.show()
+        plt.savefig(op.join(WRITE_DIR,
+                    k.replace(' ', '_') + '_%icomps.png' % n_comp))
+
+n_comps = [20]
 pkgs = glob.glob(RES_NAME + '/*dbg_acc_val_*.npy')
 for n_comp in n_comps:  # 
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        # n_hidden = int(re.search('comp=(?P<comp>.{1,2,3})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
+        max_samples = int(re.search('max(.{1,4})_', p).group(1))
+        rest_samples = int(re.search('_r(.{2,4})_', p).group(1))
+        task_samples = int(re.search('_t(.{2,4})dbg', p).group(1))
+        
+        if (task_samples != 1000):
+            continue
+        
         if n_comp != n_hidden:
             continue
         
@@ -569,16 +599,13 @@ for n_comp in n_comps:  #
 
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
-        if not '_AE' in p:
-            cur_label += 'LR only!'
-        elif 'subRS' in p:
-            cur_label += 'RSnormal'
-        elif 'pca20RS' in p:
-            cur_label += 'RSpca20'
+        cur_label += 'max=%i' % max_samples
         cur_label += '/'
-        cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
+        cur_label += 'nrest%i' % rest_samples
+        cur_label += '/'
+        cur_label += 'ntask=%i' % task_samples
         plt.plot(
             dbg_epochs_,
             dbg_acc_val_,
@@ -587,7 +614,7 @@ for n_comp in n_comps:  #
     plt.legend(loc='lower right', fontsize=9)
     plt.yticks(np.linspace(0., 1., 11))
     plt.ylabel('validation set accuracy')
-    plt.ylim(0., 1.)
+    plt.ylim(0., 1.05)
     plt.xlabel('epochs')
     plt.grid(True)
     plt.show()
@@ -598,24 +625,27 @@ for n_comp in n_comps:  #
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        # n_hidden = int(re.search('comp=(?P<comp>.{1,2,3})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
+        max_samples = int(re.search('max(.{1,4})_', p).group(1))
+        rest_samples = int(re.search('_r(.{4})_', p).group(1))
+        task_samples = int(re.search('_t(.{2,4})dbg', p).group(1))
+        
         if n_comp != n_hidden:
             continue
         
-        dbg_acc_other_ds_ = np.load(p)
+        dbg_acc_val_ = np.load(p)
 
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
-        if not '_AE' in p:
-            cur_label += 'LR only!'
-        elif 'subRS' in p:
-            cur_label += 'RSnormal'
-        elif 'pca20RS' in p:
-            cur_label += 'RSpca20'
+        cur_label += 'max=%i' % max_samples
         cur_label += '/'
-        cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
+        cur_label += 'nrest%i' % rest_samples
+        cur_label += '/'
+        cur_label += 'ntask=%i' % task_samples
+        cur_label += '/'
         plt.plot(
             dbg_epochs_,
             dbg_acc_other_ds_,
@@ -624,7 +654,7 @@ for n_comp in n_comps:  #
     plt.legend(loc='lower right', fontsize=9)
     plt.yticks(np.linspace(0., 1., 11))
     plt.ylabel('ARCHI dataset accuracy')
-    plt.ylim(0., 1.)
+    plt.ylim(0., 1.05)
     plt.xlabel('epochs')
     plt.grid(True)
     plt.show()
@@ -635,7 +665,7 @@ for n_comp in n_comps:  # AE
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
         if n_comp != n_hidden:
             continue
         
@@ -643,7 +673,7 @@ for n_comp in n_comps:  # AE
 
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
         if not '_AE' in p:
             cur_label += 'LR only!'
@@ -671,7 +701,7 @@ for n_comp in n_comps:  # AE
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
         if n_comp != n_hidden:
             continue
         
@@ -679,7 +709,7 @@ for n_comp in n_comps:  # AE
 
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
         if not '_AE' in p:
             cur_label += 'LR only!'
@@ -707,7 +737,7 @@ for n_comp in n_comps:  # AE
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
         if n_comp != n_hidden:
             continue
         
@@ -715,7 +745,7 @@ for n_comp in n_comps:  # AE
 
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
         if not '_AE' in p:
             cur_label += 'LR only!'
@@ -738,12 +768,15 @@ for n_comp in n_comps:  # AE
     plt.show()
     plt.savefig(op.join(WRITE_DIR, 'loss_combined_%icomps.png' % n_comp))
 
-pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_.npy')
+# precision / recall / f1
+target_lambda = 0.5
+
+pkgs = glob.glob(RES_NAME + '/*lambda=%.2f*dbg_prfs_.npy' % target_lambda)
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(?P<comp>.{1,3})_', p).group('comp'))
         if n_comp != n_hidden:
             continue
         
@@ -751,7 +784,7 @@ for n_comp in n_comps:
 
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
         if not '_AE' in p:
             cur_label += 'LR only!'
@@ -761,28 +794,30 @@ for n_comp in n_comps:
             cur_label += 'RSpca20'
         cur_label += '/'
         cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
-        for i in np.arange(38):
+        for i in np.arange(18):
             plt.plot(
                 dbg_epochs_,
                 np.array(dbg_prfs_)[:, 0, i],
                 label='task %i' % (i + 1))
-    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=10mm combined-loss lambda=0.5')
+    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss lambda=%.2f' %
+              target_lambda)
     plt.legend(loc='lower right', fontsize=9)
     # plt.yticks(np.linspace(0., 1., 11))
     plt.ylabel('in-dataset precisions')
-    plt.ylim(0., 1.)
+    plt.ylim(0., 1.05)
     plt.xlabel('epochs')
     plt.grid(True)
     plt.show()
-    plt.savefig(op.join(WRITE_DIR, 'prec_inds_%icomps.png' % n_comp))
+    plt.savefig(op.join(WRITE_DIR, 'prec_inds_lambda=%0.2f_%icomps.png' %
+                (target_lambda, n_comp)))
 
 # in-dataset recall at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=%.2f*dbg_prfs_.npy' % target_lambda)
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(?P<comp>.{1,3})_', p).group('comp'))
         if n_comp != n_hidden:
             continue
         
@@ -791,7 +826,7 @@ for n_comp in n_comps:
         dbg_prfs_ = np.load(p)
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
         if not '_AE' in p:
             cur_label += 'LR only!'
@@ -801,27 +836,27 @@ for n_comp in n_comps:
             cur_label += 'RSpca20'
         cur_label += '/'
         cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
-        for i in np.arange(38):
+        for i in np.arange(18):
             plt.plot(
                 dbg_epochs_,
                 np.array(dbg_prfs_)[:, 1, i],
                 label='task %i' % (i + 1))
-    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=10mm combined-loss lambda=0.5')
+    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss lambda=%.2f' %
+              target_lambda)
     plt.legend(loc='lower right', fontsize=9)
     # plt.yticks(np.linspace(0., 1., 11))
     plt.ylabel('in-dataset recall')
-    plt.ylim(0., 1.)
+    plt.ylim(0., 1.05)
     plt.xlabel('epochs')
     plt.grid(True)
     plt.show()
-    plt.savefig(op.join(WRITE_DIR, 'rec_inds_%icomps.png' % n_comp))
+    plt.savefig(op.join(WRITE_DIR, 'rec_inds_lambda=%0.2f_%icomps.png' %
+                (target_lambda, n_comp)))
 
 # in-dataset f1 at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=%.2f*dbg_prfs_.npy' % target_lambda)
 for n_comp in n_comps:
     plt.figure()
-    p_ep = glob.glob(RES_NAME + '/*comp=%i*dbg_epochs_*.npy' % n_comp)
-    dbg_epochs_ = np.load(p_ep[0])
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
         n_hidden = int(re.search('comp=(?P<comp>.{1,3})_', p).group('comp'))
@@ -832,7 +867,7 @@ for n_comp in n_comps:
             
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
         if not '_AE' in p:
             cur_label += 'LR only!'
@@ -842,28 +877,30 @@ for n_comp in n_comps:
             cur_label += 'RSpca20'
         cur_label += '/'
         cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
-        for i in np.arange(38):
+        for i in np.arange(18):
             plt.plot(
                 dbg_epochs_,
                 np.array(dbg_prfs_)[:, 2, i],
                 label='task %i' % (i + 1))
-    plt.title('Classification performance for 38 tasks')
-    # plt.legend(loc='lower right', fontsize=9)
+    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss lambda=%.2f' %
+              target_lambda)
+    plt.legend(loc='lower right', fontsize=9)
     # plt.yticks(np.linspace(0., 1., 11))
-    plt.ylabel('f1 score (test set)')
+    plt.ylabel('in-dataset f1 score')
     plt.ylim(0., 1.05)
     plt.xlabel('epochs')
     plt.grid(True)
     plt.show()
-    plt.savefig(op.join(WRITE_DIR, 'f1_inds_%icomps.png' % n_comp))
+    plt.savefig(op.join(WRITE_DIR, 'f1_inds_lambda=%0.2f_%icomps.png' %
+                (target_lambda, n_comp)))
 
 # out-of-dataset precision at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_other_ds_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=%.2f*dbg_prfs_other_ds_.npy' % target_lambda)
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(?P<comp>.{1,3})_', p).group('comp'))
         if n_comp != n_hidden:
             continue
             
@@ -871,7 +908,7 @@ for n_comp in n_comps:
 
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
         if not '_AE' in p:
             cur_label += 'LR only!'
@@ -886,23 +923,25 @@ for n_comp in n_comps:
                 dbg_epochs_,
                 np.array(dbg_prfs_other_ds_)[:, 0, i],
                 label='task %i' % (i + 1))
-    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=10mm combined-loss lambda=0.5')
+    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss lambda=%.2f' %
+              target_lambda)
     plt.legend(loc='lower right', fontsize=9)
     # plt.yticks(np.linspace(0., 1., 11))
     plt.ylabel('out-of-dataset precisions')
-    plt.ylim(0., 1.)
+    plt.ylim(0., 1.05)
     plt.xlabel('epochs')
     plt.grid(True)
     plt.show()
-    plt.savefig(op.join(WRITE_DIR, 'prec_oods_%icomps.png' % n_comp))
+    plt.savefig(op.join(WRITE_DIR, 'prec_oods_lambda=%0.2f_%icomps.png' %
+                (target_lambda, n_comp)))
 
 # out-of-dataset recall at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_other_ds_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=%.2f*dbg_prfs_other_ds_.npy' % target_lambda)
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(?P<comp>.{1,3})_', p).group('comp'))
         if n_comp != n_hidden:
             continue
             
@@ -910,7 +949,7 @@ for n_comp in n_comps:
 
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
         if not '_AE' in p:
             cur_label += 'LR only!'
@@ -925,23 +964,25 @@ for n_comp in n_comps:
                 dbg_epochs_,
                 np.array(dbg_prfs_other_ds_)[:, 1, i],
                 label='task %i' % (i + 1))
-    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=10mm combined-loss lambda=0.5')
+    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss lambda=%.2f' %
+              target_lambda)
     plt.legend(loc='lower right', fontsize=9)
     # plt.yticks(np.linspace(0., 1., 11))
     plt.ylabel('out-of-dataset recall')
-    plt.ylim(0., 1.)
+    plt.ylim(0., 1.05)
     plt.xlabel('epochs')
     plt.grid(True)
     plt.show()
-    plt.savefig(op.join(WRITE_DIR, 'rec_oods_%icomps.png' % n_comp))
+    plt.savefig(op.join(WRITE_DIR, 'rec_oods_lambda=%0.2f_%icomps.png' %
+                (target_lambda, n_comp)))
 
 # out-of-dataset f1 at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_other_ds_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=%.2f*dbg_prfs_other_ds_.npy' % target_lambda)
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(?P<comp>.{1,3})_', p).group('comp'))
         if n_comp != n_hidden:
             continue
             
@@ -949,7 +990,7 @@ for n_comp in n_comps:
 
         cur_label = 'n_comp=%i' % n_hidden
         cur_label += '/'
-        cur_label += 'lambda=%.1f' % lambda_param
+        cur_label += 'lambda=%.2f' % lambda_param
         cur_label += '/'
         if not '_AE' in p:
             cur_label += 'LR only!'
@@ -964,24 +1005,150 @@ for n_comp in n_comps:
                 dbg_epochs_,
                 np.array(dbg_prfs_other_ds_)[:, 2, i],
                 label='task %i' % (i + 1))
-    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=10mm combined-loss lambda=0.5')
+    plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss lambda=%.2f' %
+              target_lambda)
     plt.legend(loc='lower right', fontsize=9)
     # plt.yticks(np.linspace(0., 1., 11))
     plt.ylabel('out-of-dataset f1 score')
-    plt.ylim(0., 1.)
+    plt.ylim(0., 1.05)
     plt.xlabel('epochs')
     plt.grid(True)
     plt.show()
-    plt.savefig(op.join(WRITE_DIR, 'f1_oods_%icomps.png' % n_comp))
+    plt.savefig(op.join(WRITE_DIR, 'f1_oods_lambda=%0.2f_%icomps.png' %
+                (target_lambda, n_comp)))
 
-# print components
-pkgs = glob.glob(RES_NAME + '/*comps.npy')
+# print network components (1st layer)
+pkgs = glob.glob(RES_NAME + '/*W0comps.npy')
 for p in pkgs:
     lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-    n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+    n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
     if n_comp != n_hidden:
         continue
         
-    new_fname = 'comps_n=%i_lambda=%.2f' % (n_hidden, lambda_param)
+    new_fname = 'comps_n=%i_lambda=%.2f_th0.5' % (n_hidden, lambda_param)
     comps = np.load(p)
     dump_comps(nifti_masker, new_fname, comps, threshold=0.5)
+
+pkgs = glob.glob(RES_NAME + '/*comps*.npy')
+for p in pkgs:
+    lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
+    n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
+    if 'V1' in p:
+        continue
+    if n_comp != n_hidden:
+        continue
+    print p
+        
+    new_fname = 'comps_n=%i_lambda=%.2f_th0.0' % (n_hidden, lambda_param)
+    comps = np.load(p)
+    dump_comps(nifti_masker, new_fname, comps, threshold=0.0)
+
+# print LR decision matrix (2nd layer)
+pkgs = glob.glob(RES_NAME + '/*V1comps.npy')
+for p in pkgs:
+    lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
+    n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
+    if n_comp != n_hidden:
+        continue
+    print p
+    
+    cur_mat = np.load(p)
+
+    if n_comp == 20:
+        fs = (8, 6)
+    elif n_comp == 100:
+        fs = (12, 8)
+        
+
+    plt.figure(figsize=fs)
+    masked_data = np.ma.masked_where(cur_mat != 0., cur_mat)
+    plt.imshow(masked_data, interpolation='nearest', cmap=plt.cm.gray_r)
+    masked_data = np.ma.masked_where(cur_mat == 0., cur_mat)
+    plt.imshow(masked_data, interpolation='nearest', cmap=plt.cm.RdBu_r)
+    plt.show()
+
+    # plt.xticks(range(n_comp)[::5], (np.arange(n_comp) + 1)[::5])
+    # plt.xlabel('hidden components')
+    # plt.yticks(range(18), np.arange(18) + 1)
+    # plt.ylabel('tasks')
+    # plt.title('Linear combinations of component per task')
+    # plt.colorbar()
+    
+    new_fname = 'comps_n=%i_lambda=%.2f_V1_net2task.png' % (n_hidden, lambda_param)
+    plt.savefig(op.join(WRITE_DIR, new_fname))
+
+
+# out-of-dataset f1 score summary plots
+for n_comp in [20]: # [5, 20, 50, 100]:
+    f1_mean_per_lambda = list()
+    f1_std_per_lambda = list()
+    lambs = [0.25, 0.5, 0.75, 1.0]
+    for target_lambda in lambs:
+        pkgs = glob.glob(op.join(RES_NAME, '*n_comp=%i*lambda=%.2f*dbg_prfs_other_ds_.npy' %
+            (n_comp, target_lambda)))
+        print pkgs
+        dbg_prfs_other_ds_ = np.load(pkgs[0])
+        cur_mean = np.mean(dbg_prfs_other_ds_[-1, 2, :])
+        f1_mean_per_lambda.append(cur_mean)
+        cur_std = np.std(dbg_prfs_other_ds_[-1, 2, :])
+        f1_std_per_lambda.append(cur_std)
+        print('F1 means: %.2f +/- %.2f (SD)' % (cur_mean, cur_std))
+
+    f1_mean_per_lambda = np.array(f1_mean_per_lambda)
+    f1_std_per_lambda = np.array(f1_std_per_lambda)
+
+    plt.figure()
+    ind = np.arange(4)
+    width = 1.
+    colors = [
+        (7., 176., 242.), (7., 136., 217.), (7., 40., 164.), (1., 4., 64.)]
+    my_colors = [(x/256, y/256, z/256) for x, y, z in colors]
+    plt.bar(ind, f1_mean_per_lambda, yerr=f1_std_per_lambda,
+            width=width, color=my_colors)
+    plt.ylabel('mean F1 score (+/- SD)')
+    plt.title('out-of-dataset performance\n'
+              '%i components' % n_comp)
+    tick_strs = [u'low-rank $\lambda=%.2f$' % val for val in lambs]
+    plt.xticks(ind + width / 2., tick_strs, rotation=320)
+    plt.ylim(.5, 1.0)
+    plt.yticks(np.linspace(0.5, 1., 6), np.linspace(0.5, 1., 6))
+    plt.tight_layout()
+    out_path2 = op.join(WRITE_DIR, 'f1_bars_comp=%i.png' % n_comp)
+    plt.savefig(out_path2)
+
+# final scarcity plot
+pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
+dbg_epochs_ = np.load(pkgs[0])
+
+k, v = ('out-of-sample performance', '/*_n_comp=%i*r%i_t%i*dbg_acc_val_*.npy')
+n_comp = 20
+path_main = 'nips3mm_scarcity'
+
+plt.close('all')
+plt.figure()
+cols = ('#2998FF', '#0068C4', '#004B8D',
+        '#EFC94C', '#E27A3F', '#DF4949')
+for (ntask, nrest), col in zip([[1000, 1500], [1000, 1000], [1000, 500],
+                                [100, 150], [100, 100], [100, 50],], cols):
+    pkgs = glob.glob(RES_NAME + (v % (n_comp, nrest, ntask)))
+    print(pkgs)
+
+    cur_values = np.load(pkgs[0])
+    cur_label = '%i : %i' % (ntask, nrest)
+
+    plt.plot(
+        dbg_epochs_,
+        cur_values,
+        label=cur_label, color=col, linewidth=2.5)
+
+plt.title('Semi-supervision in data-rich and data-scarce scenarios')
+plt.legend(loc='lower right', fontsize=11,
+           ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
+plt.yticks(np.linspace(0., 1., 11))
+plt.ylabel(k)
+plt.xlabel('epochs')
+plt.ylim(0., 1.05)
+plt.grid(False)
+plt.show()
+plt.savefig(op.join(WRITE_DIR,
+            k.replace(' ', '_') + '_%icomps.png' % n_comp))

@@ -70,14 +70,11 @@ biology in ever-increasing datasets.
 Existing neuroimaging methods typically perform either discovery of unknown
 neural structure or testing of neural structure associated with mental tasks.
 %
-However, modelling the neural correlates of mental tasks hinges
-on the pertinence of the assumed neurobiological structure.
-%XXX: this last statement is not cristal clear.
+However, testing hypotheses on the neural correlates of mental tasks
+depends on the representation of the observations.
 %
-% XXX: Big gap between these two sentences. It is unclear what you call 'supervised' or 'unsupervised'.
-%
-We therefore propose to solve the unsupervised dimensionality reduction
-and supervised task classification in
+We therefore propose to optimize
+representation and task classification in
 an identical statistical learning problem.
 %
 We show that this approach yields more accurate and more interpretable
@@ -91,75 +88,71 @@ bioinformatics; fMRI; systems neuroscience
 
 \section{Introduction}
 %
-Methods used in neuroimaging research can be grouped by discovering
+Methods for neuroimaging research can be grouped by discovering
 neurobiological structure or assessing the neural correlates associated
 with mental tasks.
-To discover spatial distributions of activation structure across time,
-independent component analysis (ICA) \cite{beckmann2005} is often used
-to decompose the BOLD (blood-oxygen level-dependent) signals into the
-main modes of variation.
-The ensuing spatial activation patterns are believed to represent
+To discover, on the one hand, spatial distributions of neural activity
+structure across time,
+independent component analysis (ICA) \cite{beckmann2005} is often used.
+It decomposes the BOLD (blood-oxygen level-dependent) signals into the
+primary modes of variation.
+The ensuing spatial activity patterns are believed to represent
 brain networks of
-functionally interacting brain regions \cite{smith2009}.
+functionally interacting regions \cite{smith2009}.
 Similarly, sparse principal component analysis (SPCA) \cite{varoqu2011}
 has been used to
 separate BOLD signals into parsimonious network components.
-Thus extracted brain networks have been shown to be
+Thus extracted brain networks are probably
 manifestations of electrophysiological oscillation frequencies \cite{hipp15}.
 Their fundamental organizational role is further
-attested by continued covariation during sleep and anesthesia.
+attested by continued covariation during sleep and anesthesia \cite{fox07}.
 %
-Network discovery is typically performed by applying ICA or SPCA on
-unlabeled "resting-state" data. These capture brain dynamics
+Network discovery by applying ICA or SPCA is typically performed on
+task-unrelated (i.e., \textit{unlabeled}) ``resting-state'' data.
+These capture brain dynamics
 during ongoing random thought without controlled environmental stimulation.
-A large proportion of the BOLD signal is known
+In fact, a large proportion of the BOLD signal is known
 not to correlate with a particular behavior, stimulus, or experimental task
 \cite{fox07}. 
 
-On the other hand, to investigate
+To test, on the other hand,
 the neural correlates underlying mental tasks,
 the general linear model (GLM) is the dominant approach \cite{friston94}.
 The contribution of
 individual brain voxels is estimated
 according to a design matrix of experimental tasks.
 Alternatively, psychophysiological interactions (PPI)
-elucidate the functional interactions between voxels as a function
-of experimental tasks \cite{friston97}.
-Dynamic causal modeling (DCM), in turn, quantifies directed,
-task-driven influences between regions
-by treating the brain as a nonlinear dynamic system with unknown
-neuronal states \cite{stephan04}.
+elucidate the influence of one brain region on another conditioned
+by experimental tasks \cite{friston97}.
 As a last example, always more neuroimaging studies model
 experimental tasks by training classification algorithms on brain signals
 \cite{poldrack09decoding}.
-All these methods are applied to labeled task data that capture brain dynamics
+All these methods are applied to task-associated (i.e., \textit{labeled})
+data that capture brain dynamics
 during stimulus-guided behavior.
 Two important conclusions can be drawn.
-First, the mentioned supervised neuroimaging analyses operate
-without exception in a voxel space. 
-%XXX:not exactly: the DCM is based on ROIs typically. PPI also ? 
-
+First, the mentioned supervised neuroimaging analyses typically yield
+results in a voxel space.
 This ignores the fact that the BOLD
-signal exhibits distributed spatial activation patterns.
-Second, existing neuroimaging analyses do not acknowledge the fact that the
-task-induced changes of the BOLD signal typically amount to less than 5\%
-of baseline activity \cite{fox07}. 
+signal exhibits spatially distributed activity patterns.
 %
-% XXX I think that this is wrong. Moreover, it is not completely  clear how crucial this is. I think that there are better arguments to introduce the joint analysis of rest and task.
-% For example, the existence of abundant RS data is an important practical reson to consider them. 'Better sample the manifold of brain states'
-% 
-They do thus not exploit the high similarity
-of BOLD dynamics in the human brain at rest and during experimental tasks,
+Second, existing supervised neuroimaging analyses
+do not acknowledge the abundance
+of easily acquired resting-state data \cite{biswaldiscovery}.
+These may allow better sampling the manifold of brain states
+due to the high task-rest similarities of neural activity patterns,
 as observed using ICA \cite{smith2009}.
 
 Both these biological properties can be conjointly exploited in a mixed
- (i.e., use rest and task data)
+ (i.e., use task and rest data)
 low-rank (i.e., perform network decomposition)
 approach.
 %
-The integration of brain-network discovery into a 
-supervised classification formally yields a semi-supervised learning framework that should identify the most relevant
-neurobiological structure for the prediction problem at hand.
+The integration of brain-network discovery into
+supervised classification formally yields a semi-supervised learning
+framework. The most relevant
+neurobiological structure should hence be identified
+for the prediction problem at hand.
 %
 Autoencoders suggest themselves because they can emulate
 variants of most unsupervised learning algorithms,
@@ -186,9 +179,7 @@ with unique global minimum.
 Autoencoders behave like a SPCA if shrinkage terms are added to the
 model weights in the optimization objective.
 Moreover, they have the characteristics of an ICA in case of tied weights
-and feeding the first-layer activation into any nonlinear convex
-%% ICA contrasts are rarely convex ?!?
-function \cite{le2011ica}.
+and adding a nonlinear convex transformation \cite{le2011ica}.
 These authors further demonstrated that ICA, sparse autoencoders, and 
 sparse coding are mathematically equivalent
 under mild conditions.
@@ -202,7 +193,6 @@ In the present investigation,
 a linear autoencoder will be fed by (unlabeled) rest data and
 integrated as bottleneck
 into a low-rank logistic regression fed by (labeled) task data.
-% Using the chain rule for gradient descent, 
 We can then solve the unsupervised data representation and the
 supervised classification in an identical statistical learning
 problem.
@@ -222,17 +212,12 @@ resting-state autoencoders that
 put probability mass on the most neurobiologically
 valid models in the hypothesis set.
 %
-The generalization performance should consequently be improved due to 
-reduced Vapnik-Chervonenkis dimensions of the trained estimator.
-% I would not make direct claims on *VC* dimension, since you don't consider it explictly
-%
 Taken together,
 the important modes of variation in brain dynamics and
 the neural correlates subserving mental operations
 have mostly been studied in isolation.
 We provide a principled computational framework to link these previously
 unconnected domains of systems neuroscience.
-
 
 \section{Methods}
 %
@@ -259,11 +244,11 @@ The ``minimally preprocessed'' pipeline includes
 gradient unwarping, motion correction, fieldmap-based EPI distortion
 correction, brain-boundary-based registration of EPI to structural
 T1-weighted scans, nonlinear (FNIRT) registration into MNI space,
-and grand-mean intensity normalization. Activation maps were spatially
+and grand-mean intensity normalization. Activity maps were spatially
 smoothed with a Gaussian kernel of 4mm (FWHM). A GLM was
 implemented by FILM from the FSL suite with model regressors from convolution
 with a “canonical” hemodynamic response function and from temporal derivatives.
-HCP tasks were conceived to modulate activation
+HCP tasks were conceived to modulate activity
 in a maximum of different brain regions and neural systems. Indeed, at
 least 70\% of the participants showed consistent brain activity in
 contrasts from the task battery, which certifies excellent
@@ -320,7 +305,7 @@ channel head coil (TR=2400ms, TE=30ms, flip angle=60°, in-plane
 FOV=$19.2\times19.2$cm, 40 slices, 3.0mm isotropic voxels).
 Standard preprocessing was performed with Nipype \cite{gorgo11}, including
 slice timing, motion correction, alignment, and spatial normalization.
-Activation maps were spatially smoothed by
+activity maps were spatially smoothed by
 a Gaussian kernel of 5mm (FWHM).
 Analogous to HCP data, the second task dataset incorporated 1404
 labeled, grey-matter masked, and z-scored activity maps
@@ -331,37 +316,41 @@ composed of autoencoder and low-rank logistic regression.
 
 \paragraph{Linear autoencoder.}
 The affine autoencoder takes the input 
-$x$ and projects it into coordinates of a latent representation $z$
+$\mathbf{x}$ and projects it into coordinates of a
+latent representation $\mathbf{z}$
 by
 
 \begin{eqnarray}
   \begin{split}
-  z &= W_0 x + b_{W_0} \\
-  x' &= W_1 z + b_{W_1}
+    \mathbf{z} &= \mathbf{W_0} \mathbf{x} + \mathbf{b_{W_0}} \\
+    \mathbf{x'} &= \mathbf{W_1} \mathbf{z} + \mathbf{b_{W_1}}
   \end{split}
   \label{eq:autoenc}
 \end{eqnarray}
 
-where $x \in \mathbb{R}^{d}$ denotes the vector of $d=79,941$
+where $\mathbf{x \in \mathbb{R}^{d}}$ denotes the vector of $d=79,941$
 voxel values from each
-rest map, $z \in \mathbb{R}^{n}$ is the $n$ hidden dimensions (i.e.,
+rest map,
+$\mathbf{z \in \mathbb{R}^{n}}$ is the $n$ hidden dimensions (i.e.,
 distributed neural activity patterns), and 
-$x' \in \mathbb{R}^{d}$ is the reconstruction vector of the original activity map
+$\mathbf{x' \in \mathbb{R}^{d}}$
+is the reconstruction vector of the original activity map
 from the hidden variables. 
 % XXX use bold letters for vectors and matrices
-Further, ${W_0}$ denotes the weight matrix that
+Further, $\mathbf{W_0}$ denotes the weight matrix that
 transforms
 from input space into the hidden space (encoder),
-${W_1}$ is the weight matrix for back-projection from the hidden variables to the
+$\mathbf{W_1}$ is the weight matrix for back-projection
+from the hidden variables to the
 output space (decoder).
-${b_{W_0}}$ and ${b_{W_1}}$ are bias vectors.
-Note that ${W_0}$ and ${W_1}$ are tied,
-$W_0$ = $W_1^T$.
-The optimal model parameters ${W_0}, {b_{W_0}}, {b_{W_1}}$ are found by
+$\mathbf{b_{W_0}}$ and $\mathbf{b_{W_1}}$ are bias vectors.
+Note that $\mathbf{W_0}$ and $\mathbf{W_1}$ are tied,
+$\mathbf{W_0} = \mathbf{W_1^T}$.
+The optimal model parameters $\mathbf{W_0, b_{W_0}, b_{W_1}}$ are found by
 minimizing the imperfection of reconstruction according to squared error
 
 \begin{eqnarray}
-  {\mathcal{L_{AE}}}(x, x') = || x - x' ||^2
+  {\mathcal{L_{AE}}}(\mathbf{x}, \mathbf{x'}) = || \mathbf{x} - \mathbf{x'} ||^2
 \end{eqnarray}
 
 This reconstruction error criterion equates with
@@ -374,28 +363,30 @@ activations in the first layer.
 Lossy compression by a low-dimensional bottleneck
 is also imposed by the first layer of the low-rank
 multinomial logistic regression.
-It gives the probability of an input $x$ to belong
+It gives the probability of an input $\mathbf{x}$ to belong
 to a class $i \in \mathbb{N}$
 
 \begin{eqnarray}
   \begin{split}
-    P(Y=i|x, V_0,V_1,b_{V_0}, b_{V_1}) &= softmax_i(V_1 (V_0 x + b_{V_0}) + b_{V_1}) \\
-    &= \frac {e^{V_{1i} (V_{0i} x + b_{V_{0i}}) + b_{V_{1i}}}} {\sum_j e^{V_{1j} (V_{0j} x + b_{V_{0j}}) + b_{V_{1j}}}}            
+    P(Y=i|\mathbf{x, V_0,V_1,b_{V_0}, b_{V_1}}) &= softmax_i(\mathbf{V_1 (V_0 x + b_{V_0}) + b_{V_1}}) \\
+    &= \frac {e^{\mathbf{V_{1i} (V_{0i} x + b_{V_{0i}}) + b_{V_{1i}}}}} {\sum_j e^{\mathbf{V_{1j} (V_{0j} x + b_{V_{0j}}) + b_{V_{1j}}}}}            
   \end{split}
   \label{eq:lr}
 \end{eqnarray}
 
-where the matrix $V_0 \in \mathbb{R}^{dxn}$ transforms the input $x \in \mathbb{R}^{d}$
+where the matrix $\mathbf{V_0 \in \mathbb{R}^{dxn}}$
+transforms the input $\mathbf{x \in \mathbb{R}^{d}}$
 into $n$ latent components
-and the matrix $V_1 \in \mathbb{R}^{nxc}$ projects the latent components
+and the matrix $\mathbf{V_1 \in \mathbb{R}^{nxc}}$
+projects the latent components
 onto hyperplanes that reflect $c$ class probabilities.
-$b_{V_0}$ and $b_{V_1}$ are corresponding
+$\mathbf{b_{V_0}}$ and $\mathbf{b_{V_1}}$ are corresponding
 bias vectors.
 The loss function is given by
 
 \begin{eqnarray}
   \begin{split}
-    {\mathcal{L_{LR}}}(x, y) = \frac{1}{N_{X_{task}}} \sum_{i=0}^{N_{X_{task}}} \log(P(Y=y^{(i)}|x^{(i)}; V_1 (V_0 x + b_{V_0}) + b_{V_1})
+    {\mathcal{L_{LR}}}(\mathbf{x, y}) = \frac{1}{N_{X_{task}}} \sum_{i=0}^{N_{X_{task}}} \log(P(Y=y^{(i)}|\mathbf{x^{(i)}; V_1 (V_0 x + b_{V_0}) + b_{V_1}})
 \end{split}
 \label{eq:lr_loss}
 \end{eqnarray}
@@ -406,7 +397,7 @@ and the low-rank logistic regression
 are linked one two levels. First, their transformation matrices mapping from
 input to the latent space are identical
 \begin{eqnarray}
-  V_0 = W_0
+  \mathbf{V_0} = \mathbf{W_0}
 \end{eqnarray}
 We thus search for a compression of the 79,941 voxel values into $n$ latent
 components that represent an optimal latent code for both
@@ -423,7 +414,7 @@ logistic regression are interpolated in the common loss function
 \end{eqnarray}
 
 In so doing, we search for the combined model parameters
-$\theta=\{V_0,V_1,b_{V_0}, b_{V_1}, b_{W_0}, b_{W_1}\}$
+$\theta=\{\mathbf{V_0,V_1,b_{V_0}, b_{V_1}, b_{W_0}, b_{W_1}}\}$
 with respect to the (unsupervised) reconstruction error and the
 (supervised) task classification.
 ${\mathcal{L_{AE}}}$ is devided by ${N_{X_{rest}}}$ to equilibrate both
@@ -459,10 +450,10 @@ are given by
 
 \begin{eqnarray}
   \begin{split}
-v^{(t+1)} &= \rho v^{(t+1)} + (1 - \rho)\left(\frac{\partial f}{\partial \theta}\right)^2
+    \mathbf{v^{(t+1)}} &= \rho \mathbf{v^{(t+1)}} + (1 - \rho)\left(\frac{\partial f}{\partial \theta}\right)^2
 %v^{(t+1)} = \rho v^{(t+1)} + (1 - \rho)˜|\nabla f
 \\
-\theta^{(t+1)} &= \theta^{(t)} + \alpha \frac{\nabla f(\theta^{(t)})}{\sqrt{v^{(t+1)} + \epsilon}},
+\theta^{(t+1)} &= \theta^{(t)} + \alpha \frac{\nabla f(\theta^{(t)})}{\sqrt{\mathbf{v^{(t+1)}} + \epsilon}},
   \end{split}
 \end{eqnarray}
 
@@ -501,9 +492,6 @@ accessible online for reproducibility and reuse
 % url{http://github.com/banilo/nips2015}.
 
 \bigskip
-% XXX the accuracy figure is not very nice. export is in pdf.
-% XXX change the titles. remove the resolution information from the title.
-% XXX larger legends. they're not readable currently
 \begin{figure}
 \begin{centering}
 \includegraphics[width=1.00\textwidth]{figures/accuracies.png}
@@ -542,7 +530,7 @@ All values are z-scored.
 \begin{figure}
 % XXX: figure not readable
 \begin{centering}
-\includegraphics[width=1.00\textwidth]{figures/support_bars.png}
+\includegraphics[width=1.00\textwidth]{figures/semisup.png}
 \end{centering}
 \caption{\textbf{Relation between support recovery and out-of-dataset performance}
 \textit{Upper row:} the fit-for-purpose of the classification models
@@ -553,6 +541,9 @@ regression ($\lambda=0.25, 0.50, 0.75, 1.00$).
 \textit{Lower row:} ordinary logistic regression is applied to the
 ARCHI dataset after projection into the latent dimensions learned from
 the HCP task data.
+
+\textbf{whenever I tried to have 3+ times more rest than task images results dropped dramatically...naive interpretation: if the rest information is too rich it overrules task patterns and hinders the supervised learning
+}
 }
 \end{figure}
 
@@ -562,6 +553,10 @@ the HCP task data.
 \item{20 components: high bias/low variance
 100 compoentens: low bias/high variance}
 \end{itemize}
+
+the features of the classes show that we captured activaiton properties,
+not particpant or paradigm properties
+
 
 \paragraph{Classification performance}
 \begin{itemize}
@@ -618,79 +613,63 @@ over the ARCHI task data}
   improve generalization}
 \end{itemize}
 
-\begin{figure}
-  \begin{center}
-    \includegraphics[width=0.40\textwidth]{figures/figure3.png}
-  \end{center}
-  \caption {\textbf{
-  Equilibrium between autoencoder and low-rank logistic regression}
-  One learned decomposition component (out of 20) between the only-autoencoder
-  (\textit{uppermost panel}) and only-logistic-regression
-  (\textit{lowermost panel}) scenarios.
-  The congruent structure (\textit{red, middle column})
-  in the
-  posterior cingulate cortex, posterior mid-cingulate cortex, and medial
-  prefrontal cortex appears to be important in decompositions of the rest and
-  task neuroimaging data. With increasing weight on the supervised learning,
-  non-congruent structure emerges in the early (\textit{blue}) and
-  lateral (\textit{red}) visual cortex
-  (\textit{right column}). Matrix weights were z-scored.
-% XXX To me there is no clear message here. You can always interpolate between arbitrary maps... What does this bring to you ? 
- }
-\end{figure}
-
-
 \section{Discussion and Conclusion}
-%
-There is an increasing occurrence of high-dimensional problems in the
-neuroimaging domain. 
-%
-% XXX: meaningless and useless for your work
-%
-Yet, there is also considerable uncertainty about the
-most pertinent representation
-of neural activation information.
-This calls for new statistical learning algorithms that
-behave well in large samples. Ideally, they should acknowledge
-and exploit widely-accepted neuroscientific knowledge.
-We here propose such an estimator that learns
-dimensionality reduction
-in a neurobiological and interpretable fashion.
-% You really should emphasize the problem of accumulating data and knowledge which is much more interesting. Cite Yannick. 
-
+% Conceptual recap+gain of current paper
 Using the flexibility of autoencoders, we
 learn the optimal decomposition from high-dimensional
-voxel brain space into the most important activation patterns for a
-statistical learning question of interest.
+voxel brain space into the most important activity patterns for a
+supervised learning question.
 The higher generalization accuracy and support recovery, comparing to
-state-of-the-art classification, hold potential
-for adoption in various every-day analyses in the neuroimaging field.
+ordinary logistic regression, hold potential
+for adoption in various neuroimaging analyses.
 Besides increased performance, these models are more interpretable by
 automatically learning a mapping to and from a brain-network space.
 This domain-specifc classification algorithms
 encourages departure from the artificial and statistically
 less attractive voxel space.
-From a neurobiological perspective,
-we demonstrate that neural activity underlying defined mental operations
-can readily be explained by linear combinations of the main activation
+Neurobiologically,
+neural activity underlying defined mental operations
+can be explained by linear combinations of the main activity
 patterns. That is,
-neural activity data as measured by fMRI probably concentrate near
+fMRI data probably concentrate near
 a low-dimensional manifold of brain networks.
 These fundamental building blocks of brain organization might
 facilitate the quest for the cognitive primitives of
 human thought.
-Moreover, data-intense neuroimaging studies in the future can be made tractable
-by reduction to the neurobiological essence.
-This can be particulary useful in multi-center clinical studies
-on the prediction of disease trajectories and drug treatment responses
-in psychiatric and neurological populations.
 We hope that these first steps stimulate development towards
-powerful semi-supervised classification methods.
+powerful semi-supervised classification methods in systems neuroscience.
+
+% grand perspective
+In the future, automatic reduction of brain images to
+their neurobiological essence
+may facilitate data-intense neuroimaging studies.
+Initiatives for data collection are rapidly increasing
+in neuroscience \cite{poldrack2014data}.
+These promise integration
+of accumulating neuroscientific knowledge from neuroimaging databases.
+Tractability by
+condensed feature representations can avoid the ill-posed problem of
+learning the full distribution of activity patterns.
+%
+This is relevant to the 
+multi-class challenges spanning the human cognitive space
+\cite{schwartz2013mapping}
+and
+combination of neuroimaging with
+high-throughput genetic analyses, such as GWAS
+\cite{need2010gwas}.
+%
+The biggest socioeconomic potential may
+lie in across-hospital clinical studies that
+predict disease trajectories and drug responses
+in psychiatric/neurological populations
+\cite{frackowiak2015future, gustav2011cost}.
 
 \paragraph{Acknowledgment}
 {\small
 Data were provided the Human Connectome Project. The study was supported
-by the German National Academic Foundation (D.B.)}
+by the German National Academic Foundation (D.B.).
+}
 
 \small
 \bibliographystyle{splncs03}
