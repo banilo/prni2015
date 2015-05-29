@@ -157,6 +157,22 @@ for the prediction problem at hand.
 Autoencoders suggest themselves because they can emulate
 variants of most unsupervised learning algorithms,
 including PCA, SPCA, and ICA \cite{hinton06}.
+\begin{wrapfigure}{r}{0.40\textwidth}
+  \centering
+  %\captionsetup{labelformat=nonumber}
+    \includegraphics[width=0.40\textwidth]{figures/figure1.png}
+  \vspace{-0.7cm}
+  \caption {\textbf{Architecture.}
+  Linear autoencoders find an optimal compression of 79,941 brain voxels
+  into $n$ unknown activity patterns by improving reconstruction from them.
+  The decomposition matrix equates with the bottleneck of
+  a factored logistic regression.
+  Supervised multi-class learning on task data ($X_{task}$)
+  is thus guided by
+  unsupervised decomposition of rest data ($X_{rest}$).
+  }
+\end{wrapfigure}
+%
 Autoencoders
 are one-layered learning models that condense the input data to
 local and global representations
@@ -164,15 +180,6 @@ by improving reconstruction from them.
 %
 They behave like a PCA
 in case of one linear hidden layer and a squared error loss
-%
-\begin{wrapfigure}{r}{0.40\textwidth}
-  \centering
-  %\captionsetup{labelformat=nonumber}
-    \includegraphics[width=0.40\textwidth]{figures/figure1.png}
-  \caption {\textbf{Architecture. XXX develop the cpation. Main msg ?}
-  }
-\end{wrapfigure}
-%
 \cite{baldi1989neural}.
 This architecture yields a convex optimization objective
 with unique global minimum.
@@ -513,17 +520,21 @@ XXX: Message ??
 \includegraphics[width=1.00\textwidth]{figures/figure_weights.jpg}
 \end{centering}
 \caption{\textbf{Comparing the interpretability of classification weights}
-The voxel predictors corresponding to 5 (of 18) psychological tasks (\textit{rows})
+The voxel predictors corresponding to 5 exemplary
+(of 18 total) psychological tasks (\textit{rows})
 from the HCP dataset \cite{barch2013}.
-\textit{Left column:} ordinary logistic regression (based on same
-implementation but without bottleneck layer or autoencoder),
+\textit{Left column:} ordinary logistic regression (same
+implementation but without bottleneck or autoencoder),
 \textit{middle column:} semi-supervised low-rank logistic regression
 (latent components $n=20$, $\lambda=0.5$, $\ell_1=0.1$, $\ell_2=0.1$),
-\textit{right column:} voxel-wise average of whole-brain activity
-across the first-level activity maps from 498 participants
-(thresholded at 0.25).
-All values are z-scored.
-% XXX: Why is the z-map sparse ?!? 
+\textit{right column:} voxel-wise average of whole-brain
+activity maps from each task (thresholded at 0.25).
+Low-rank logistic regression
+a) puts higher absolute weights on relevant structure
+b) lower ones on irrelevant structure,
+and
+c) yields BOLD-typical local contiguity.
+All values are z-scored and smoothed by a Gaussian (fwhm=4).
 }
 \end{figure}
 
@@ -557,6 +568,15 @@ the HCP task data.
 the features of the classes show that we captured activaiton properties,
 not particpant or paradigm properties
 
+out of sample performance: extract features of general relevance
+beyond the supervised problem at hand
+
+support recovery:
+Low-rank logistic regression
+a) puts higher absolute weights on relevant structure
+b) lower ones on irrelevant structure,
+and
+c) yields BOLD-typical local contiguity.
 
 \paragraph{Classification performance}
 \begin{itemize}
@@ -576,7 +596,7 @@ over the ARCHI task data}
   decomposition derived in semi-supervised fashion}
 \end{itemize}
 
-\paragraph{Support recovery}
+\paragraph{Support recovery -> feature identification}
 \begin{itemize}
   \item{fit for purpose; the right model should have
   high probability in the right places}
@@ -597,8 +617,6 @@ over the ARCHI task data}
   drop-out, input corruption (p=0.1/0.3/0.5), RELUs}
   \item{no penalty or only L1 or L2 penalty generally yielded worse
   generalization performance}
-  \item{low L1/L2 penalties (0.1) yielded better results
-  than higher values (0.3, 0.5)}
   \item{``pretraining'' of the bottleneck by settings weights to
   preliminary PCA, SPCA or ICA weights did not give better accuracies,
   neither for autoencoder pretraining }
@@ -633,7 +651,7 @@ can be explained by linear combinations of the main activity
 patterns. That is,
 fMRI data probably concentrate near
 a low-dimensional manifold of brain networks.
-These fundamental building blocks of brain organization might
+Extracting fundamental building blocks of brain organization might
 facilitate the quest for the cognitive primitives of
 human thought.
 We hope that these first steps stimulate development towards
@@ -642,22 +660,23 @@ powerful semi-supervised classification methods in systems neuroscience.
 % grand perspective
 In the future, automatic reduction of brain images to
 their neurobiological essence
-may facilitate data-intense neuroimaging studies.
+may leverage data-intense neuroimaging studies.
 Initiatives for data collection are rapidly increasing
 in neuroscience \cite{poldrack2014data}.
-These promise integration
+These promise structured integration
 of accumulating neuroscientific knowledge from neuroimaging databases.
 Tractability by
 condensed feature representations can avoid the ill-posed problem of
 learning the full distribution of activity patterns.
 %
-This is relevant to the 
+This is not only relevant to the 
 multi-class challenges spanning the human cognitive space
 \cite{schwartz2013mapping}
+but also the
+multi-modal combination with
+high-resolution 3D models of brain anatomy \cite{amunts2013bigbrain}
 and
-combination of neuroimaging with
-high-throughput genetic analyses, such as GWAS
-\cite{need2010gwas}.
+high-throughput genome analyses \cite{need2010gwas}.
 %
 The biggest socioeconomic potential may
 lie in across-hospital clinical studies that
@@ -667,7 +686,7 @@ in psychiatric/neurological populations
 
 \paragraph{Acknowledgment}
 {\small
-Data were provided the Human Connectome Project. The study was supported
+Data were provided by the Human Connectome Project. The study was supported
 by the German National Academic Foundation (D.B.).
 }
 

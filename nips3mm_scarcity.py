@@ -41,8 +41,8 @@ if not op.exists(WRITE_DIR):
     os.mkdir(WRITE_DIR)
 
 MAX_SAMPLES = 2000
-MAX_REST_SAMPLES = 1000
-MAX_TASK_SAMPLES = 100
+MAX_REST_SAMPLES = 1
+MAX_TASK_SAMPLES = 1000
 
 ##############################################################################
 # load+preprocess data
@@ -465,7 +465,8 @@ n_comps = [20]
 # n_comps = [40, 30, 20, 10, 5]
 for n_comp in n_comps:
     # for lambda_param in [0]:
-    for lambda_param in [0.5]:
+    #for lambda_param in [0.5]:
+    for lambda_param in [1.0]:
         l1 = 0.1
         l2 = 0.1
         my_title = r'Low-rank LR + AE (combined loss, shared decomp): n_comp=%i L1=%.1f L2=%.1f lambda=%.2f res=3mm spca20RS max%i r%i t%i' % (
@@ -1142,6 +1143,97 @@ for (ntask, nrest), col in zip([[1000, 1500], [1000, 1000], [1000, 500],
         label=cur_label, color=col, linewidth=2.5)
 
 plt.title('Semi-supervision in data-rich and data-scarce scenarios')
+plt.yticks(np.linspace(0., 1., 11))
+plt.ylabel(k)
+plt.xlabel('epochs')
+plt.grid(True)
+plt.ylim(0., 1.05)
+plt.axhline(1. / 18, xmin=0, xmax=1, color='#696969', linewidth=2.5,
+            label='chance', linestyle='--')
+plt.show()
+plt.legend(loc='lower right', fontsize=11,
+           ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
+plt.savefig(op.join(WRITE_DIR,
+            k.replace(' ', '_') + '_%icomps_scarcities.png' % n_comp))
+
+# pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
+# dbg_epochs_ = np.load(pkgs[0])
+# 
+# k, v = ('out-of-sample performance', '/*_n_comp=%i*r%i_t%i*dbg_acc_val_*.npy')
+# n_comp = 20
+# path_main = 'nips3mm_scarcity'
+
+# bars
+plt.close('all')
+cols = ('#EFC94C', '#E27A3F', '#DF4949',
+        '#2998FF', '#0068C4', '#004B8D')
+width = 0.25
+x_pos = [0]
+x_labels = ['chance']
+plt.figure()        
+handle = plt.bar(x_pos[-1], 1. / 18, width=width, color='#696969')
+
+for (ntask, nrest), col in zip([[100, 50], [100, 100], [100, 150],
+                                [1000, 500], [1000, 1000], [1000, 1500],], cols):
+    pkgs = glob.glob(RES_NAME + (v % (n_comp, nrest, ntask)))
+    print(pkgs)
+    if len(x_pos) == 1 or len(x_pos) == 4:
+        x_pos += [width * 1.5 + x_pos[-1]]
+    else:
+        x_pos += [width + x_pos[-1]]
+
+    cur_values = np.load(pkgs[0])
+    x_labels += ['%i : %i' % (ntask, nrest)]
+
+    plt.bar(
+        x_pos[-1],
+        cur_values[-1], width=width,
+        color=col)
+
+plt.title('Semi-supervision in data-scarce and data-rich scenarios')
+# plt.legend(loc='lower right', fontsize=10,
+#            ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
+plt.yticks(np.linspace(0., 1., 11))
+plt.ylabel(k)
+plt.xlabel('task-maps : rest-maps')
+plt.xticks(np.array(x_pos) + (width / 2), x_labels, rotation=35)
+plt.grid(True)
+plt.show()
+plt.tight_layout()
+plt.savefig(op.join(WRITE_DIR,
+            k.replace(' ', '_') + '_%icomps_scarcities.png' % n_comp))
+
+# final scarcity plot 2
+pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
+dbg_epochs_ = np.load(pkgs[0])
+
+k, v = ('out-of-sample performance', '/*_n_comp=%i*r%i_t%idbg_acc_val_*.npy')
+n_comp = 20
+path_main = 'nips3mm_scarcity'
+
+plt.close('all')
+plt.figure()
+cols = ('#2998FF', '#0068C4', '#004B8D', '#000000',
+        '#EFC94C', '#E27A3F', '#DF4949', '#696969')
+for (ntask, nrest), col, lmb in zip([[1000, 1500], [1000, 1000], [1000, 500], [1000, 1],
+                                    [100, 150], [100, 100], [100, 50], [100, 1]],
+                                    cols,
+                                    [0.5, 0.5, 0.5, 1.0] * 2):
+    pkgs = glob.glob(RES_NAME + (v % (n_comp, nrest, ntask)))
+    print(pkgs)
+
+    cur_values = np.load(pkgs[0])
+    if nrest == 1:
+        cur_label = '%i : %i ($\lambda=%.2f$)' % (ntask, 0, lmb)
+    else:
+        cur_label = '%i : %i ($\lambda=%.2f$)' % (ntask, nrest, lmb)
+
+    plt.plot(
+        dbg_epochs_,
+        cur_values,
+        label=cur_label, color=col, linewidth=2.5)
+
+plt.title('Semi-supervision in data-rich and data-scarce scenarios')
 plt.legend(loc='lower right', fontsize=11,
            ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
 plt.yticks(np.linspace(0., 1., 11))
@@ -1151,4 +1243,4 @@ plt.ylim(0., 1.05)
 plt.grid(False)
 plt.show()
 plt.savefig(op.join(WRITE_DIR,
-            k.replace(' ', '_') + '_%icomps.png' % n_comp))
+            k.replace(' ', '_') + '_%icomps_scarcities2.png' % n_comp))

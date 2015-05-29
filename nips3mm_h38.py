@@ -450,7 +450,7 @@ def dump_comps(masker, compressor, components, threshold=2):
                       cut_coords=(0, -2, 0), draw_cross=False,
                       output_file=path_mask + 'zmap.png')
 
-n_comps = [20]
+n_comps = [100]
 # n_comps = [40, 30, 20, 10, 5]
 for n_comp in n_comps:
     # for lambda_param in [0]:
@@ -517,7 +517,7 @@ STOP_CALCULATION
 import re
 pkgs = glob.glob(RES_NAME + '/*dbg_epochs_*.npy')
 dbg_epochs_ = np.load(pkgs[0])
-n_comps = [100]
+n_comps = [20]
 pkgs = glob.glob(RES_NAME + '/*dbg_acc_train_*.npy')
 for n_comp in n_comps:
     plt.figure()
@@ -817,7 +817,7 @@ for n_comp in n_comps:
     plt.savefig(op.join(WRITE_DIR, 'rec_inds_%icomps.png' % n_comp))
 
 # in-dataset f1 at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=1.00*dbg_prfs_.npy')
 for n_comp in n_comps:
     plt.figure()
     p_ep = glob.glob(RES_NAME + '/*comp=%i*dbg_epochs_*.npy' % n_comp)
@@ -844,7 +844,7 @@ for n_comp in n_comps:
         cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
         for i in np.arange(38):
             plt.plot(
-                dbg_epochs_,
+                dbg_epochs_[:len(np.array(dbg_prfs_)[:, 2, i])],
                 np.array(dbg_prfs_)[:, 2, i],
                 label='task %i' % (i + 1))
     plt.title('Classification performance for 38 tasks')
@@ -855,7 +855,7 @@ for n_comp in n_comps:
     plt.xlabel('epochs')
     plt.grid(True)
     plt.show()
-    plt.savefig(op.join(WRITE_DIR, 'f1_inds_%icomps.png' % n_comp))
+    plt.savefig(op.join(WRITE_DIR, 'f1_inds_%icomps2.png' % n_comp))
 
 # out-of-dataset precision at lambda=0.5
 pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_other_ds_.npy')
@@ -936,7 +936,7 @@ for n_comp in n_comps:
     plt.savefig(op.join(WRITE_DIR, 'rec_oods_%icomps.png' % n_comp))
 
 # out-of-dataset f1 at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=0.25*dbg_prfs_other_ds_.npy')
+pkgs = glob.glob(RES_NAME + '/*lambda=1.00*dbg_prfs_other_ds_.npy')
 for n_comp in n_comps:
     plt.figure()
     for p in pkgs:
@@ -973,6 +973,38 @@ for n_comp in n_comps:
     plt.grid(True)
     plt.show()
     plt.savefig(op.join(WRITE_DIR, 'f1_oods_%icomps.png' % n_comp))
+    
+# scatter plot against vanilla
+plt.close('all')
+newmeth1 = np.load(op.join(WRITE_DIR, 'Low-rank_LR_AE_(combined_loss,_shared_decomp)_n_comp=20_L1=0.1_L2=0.1_lambda=0.25_res=3mm_spca20RSdbg_prfs_.npy'))
+newmeth2 = np.load(op.join(WRITE_DIR, 'Low-rank_LR_AE_(combined_loss,_shared_decomp)_n_comp=100_L1=0.1_L2=0.1_lambda=0.25_res=3mm_spca20RSdbg_prfs_.npy'))
+ordinary = np.load(op.join('nips3mm_h38_vanilla', 'LR_L1=0.1_L2=0.1_res=3mmdbg_prfs_.npy'))
+
+plt.figure()
+ep_points = np.arange(min(len(ordinary), len(newmeth1)))
+for i in ep_points[10:30]:
+    plt.scatter(ordinary[i, 2, :], newmeth1[i, 2, :], s=60)
+    plt.show()
+plt.plot(np.linspace(0, 1., 521), np.linspace(0, 1., 521),
+         '--', color='black')
+plt.xlim(0, 1.)
+plt.ylim(0, 1.)
+plt.xlabel('Plain Vanilla LogReg')
+plt.ylabel('Low-Rank LogReg (n=20)')
+plt.savefig(op.join(WRITE_DIR, 'scattern_againstLR_%icomps.png' % 20))
+
+plt.figure()
+ep_points = np.arange(min(len(ordinary), len(newmeth2)))
+for i in ep_points[10:30]:
+    plt.scatter(ordinary[i, 2, :], newmeth2[i, 2, :], s=60)
+    plt.show()
+plt.plot(np.linspace(0, 1., 521), np.linspace(0, 1., 521),
+         '--', color='black')
+plt.xlim(0, 1.)
+plt.ylim(0, 1.)
+plt.xlabel('Plain Vanilla LogReg')
+plt.ylabel('Low-Rank LogReg (n=100)')
+plt.savefig(op.join(WRITE_DIR, 'scattern_againstLR_%icomps.png' % 100))
 
 # print components
 pkgs = glob.glob(RES_NAME + '/*comps.npy')

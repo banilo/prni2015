@@ -426,10 +426,12 @@ class SSEncoder(BaseEstimator):
 # plot figures
 ##############################################################################
 
-def dump_comps(masker, compressor, components, threshold=2, fwhm=None):
+def dump_comps(masker, compressor, components, threshold=2, fwhm=None,
+               perc=None):
     from scipy.stats import zscore
     from nilearn.plotting import plot_stat_map
     from nilearn.image import smooth_img
+    from scipy.stats import scoreatpercentile
 
     if isinstance(compressor, basestring):
         comp_name = compressor
@@ -441,18 +443,29 @@ def dump_comps(masker, compressor, components, threshold=2, fwhm=None):
                                                      n_comp, i_c + 1))
         nii_raw = masker.inverse_transform(comp)
         nii_raw.to_filename(path_mask + '.nii.gz')
+        
+        comp_z = zscore(comp)
+        
+        if perc is not None:
+            cur_thresh = scoreatpercentile(np.abs(comp_z), per=perc)
+            path_mask += '_perc%i' % perc
+            print('Applying percentile %.2f (threshold: %.2f)' % (perc, cur_thresh))
+        else:
+            cur_thresh = threshold
+            path_mask += '_thr%.2f' % cur_thresh
+            print('Applying threshold: %.2f' % cur_thresh)
 
-        nii_z = masker.inverse_transform(zscore(comp))
+        nii_z = masker.inverse_transform(comp_z)
         gz_path = path_mask + '_zmap.nii.gz'
         nii_z.to_filename(gz_path)
-        plot_stat_map(gz_path, bg_img='colin.nii', threshold=threshold,
+        plot_stat_map(gz_path, bg_img='colin.nii', threshold=cur_thresh,
                       cut_coords=(0, -2, 0), draw_cross=False,
                       output_file=path_mask + 'zmap.png')
                       
         # optional: do smoothing
         if fwhm is not None:
             nii_z_fwhm = smooth_img(nii_z, fwhm=fwhm)
-            plot_stat_map(nii_z_fwhm, bg_img='colin.nii', threshold=threshold,
+            plot_stat_map(nii_z_fwhm, bg_img='colin.nii', threshold=cur_thresh,
                           cut_coords=(0, -2, 0), draw_cross=False,
                           output_file=path_mask +
                           ('zmap_%imm.png' % fwhm))
@@ -1032,8 +1045,9 @@ for p in pkgs:
     q = p.replace('W0', 'V1')
     comps = np.dot(np.load(q), np.load(p))
         
-    new_fname = 'comps_n=%i_lambda=%.2f_th0.0' % (n_hidden, lambda_param)
-    dump_comps(nifti_masker, new_fname, comps, threshold=0.0, fwhm=4)
+    new_fname = 'comps_n=%i_lambda=%.2f' % (n_hidden, lambda_param)
+    dump_comps(nifti_masker, new_fname, comps, threshold=0.0, fwhm=None,
+               perc=75)
     
 
 # print LR decision matrix (2nd layer)
