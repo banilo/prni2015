@@ -526,6 +526,13 @@ by a gain of $0.004$. The bias parameters were initalized to zero.
 With a slight abuse of notation, let $\theta$ denote a component of $\theta$.
 The normalization factor and the update rule for $\theta$
 are given by
+% XXX Michael: It is crucial, but nowhere mentioned, that the optimization is
+% XXX done in an alternating manner. The whole structure relies on this, by
+% XXX construction it is vulnerable to optimizing too much towards labels or
+% XXX rest at a time. I also identify this as one of the major weak points
+% XXX of the method, so it needs to be stated in a way that is not easily
+% XXX attackable.
+% XXX Maybe we could also talk less about RMSprop.
 
 \begin{eqnarray}
   \begin{split}
@@ -535,7 +542,10 @@ are given by
 \theta^{(t+1)} &= \theta^{(t)} + \alpha \frac{\nabla f(\theta^{(t)})}{\sqrt{\mathbf{v^{(t+1)}} + \epsilon}},
   \end{split}
 \end{eqnarray}
+% XXX Michael: Why, in the formula, do we have two different notations for
+% XXX partial derivatives? \partial and \nabla
 
+% XXX Michael: Probably remove the explanations following and just state values
 where $0 < \rho < 1$ constitutes the decay rate. $\rho$ was set to
 $0.9$ to deemphasize the magnitude of the gradient.
 Further, $\alpha$ is the learning rate and $\epsilon$ a global damping factor.
@@ -550,6 +560,7 @@ In fact, the constraint by a rest-data autoencoder qualifies as a
 \textit{hint}
 rather than regularization in a strict sense \cite{abu1994hints}.
 Its purpose is not to prevent overfitting but to introduce
+% XXX Michael: I use f earlier up, is this f here necessary?
 prior knowledge on known properties of the unknown target function $f$.
 Rather than only relying on input-output pairs in the learning process,
 we thus narrow our hypothesis set to the biologically most plausible solutions.
@@ -562,7 +573,7 @@ We used \textit{nilearn} to handle
 the high-dimensional neuroimaging data 
 \cite{abrah14}
 and
-\textit{theano} for automatic, numerically stable
+\textit{Theano} for automatic, numerically stable
 differentiation of symbolic computation graphs
 \cite{bastien2012theano, bergstra2010theano}.
 All Python scripts that generated the results are
@@ -625,7 +636,9 @@ regression ($\lambda=0.25, 0.50, 0.75, 1.00$).
 ARCHI dataset after projection into the latent dimensions learned from
 the HCP task data.
 \textbf{whenever I tried to have 3+ times more rest than task images results dropped dramatically...naive interpretation: if the rest information is too rich it overrules task patterns and hinders the supervised learning
-}
+{\color{blue} Michael: Does this also happen when you double the task data?
+i.e. rest:task 3:1, but duplicate the task data, yielding essentially 3:2?
+I assume this will work, which again points to the instability of the network architecture}}
 }
 \end{figure}
 
