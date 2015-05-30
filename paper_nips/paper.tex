@@ -35,7 +35,7 @@ high-dimensional neuroimaging data}
 \newcommand{\fix}{\marginpar{FIX}}
 \newcommand{\new}{\marginpar{NEW}}
 \DeclareMathOperator{\proj}{proj}
-\DeclareMathOperator{\soft}{soft}
+\DeclareMathOperator{\softmax}{softmax}
 \DeclareMathOperator{\prox}{prox}
 \DeclareMathOperator{\Prox}{Prox}
 \DeclareMathOperator{\im}{im}
@@ -439,40 +439,39 @@ Lossy compression by a low-dimensional bottleneck
 is also imposed by the first layer of the low-rank
 multinomial logistic regression.
 It gives the probability of an input $\mathbf{x}$ to belong
-to a class $i \in \mathbb{N}$
+to a class $i \in \{1, \dots, l\}$
 
-\begin{eqnarray}
+\begin{equation}
   \begin{split}
-    P(Y=i|\mathbf{x, V_0,V_1,c_0, c_1}) &= softmax_i(\mathbf{V_1 (V_0 x + c_0) + c_1}) \\
-    &= \frac {e^{\mathbf{V_{1i} (V_{0i} x + b_{V_{0i}}) + b_{V_{1i}}}}} {\sum_j e^{\mathbf{V_{1j} (V_{0j} x + b_{V_{0j}}) + b_{V_{1j}}}}}            
+    P(Y=i|\mathbf{x; V_0,V_1,c_0, c_1}) &= \softmax_i(f_{RL}(\mathbf x))
   \end{split}
   \label{eq:lr}
-\end{eqnarray}
-
-where the matrix $\mathbf{V_0 \in \mathbb{R}^{dxn}}$
+\end{equation}
+where \(f_{LR}(\mathbf x) = \mathbf{V_1 (V_0 x + c_0) + c_1}\) computes 
+multinomial logits and \(\softmax_i(x) = \exp(x_i)/\sum_j\exp(x_j)\).
+The matrix $\mathbf{V_0 \in \mathbb{R}^{dxn}}$
 transforms the input $\mathbf{x \in \mathbb{R}^{d}}$
 into $n$ latent components
-and the matrix $\mathbf{V_1 \in \mathbb{R}^{nxc}}$
+and the matrix $\mathbf{V_1 \in \mathbb{R}^{nxl}}$
 projects the latent components
-onto hyperplanes that reflect $c$ class probabilities.
+onto hyperplanes that reflect $l$ label probabilities.
 $\mathbf{c_0}$ and $\mathbf{c_1}$ are corresponding
 bias vectors.
 The loss function is given by
 
-\begin{eqnarray}
-  \begin{split}
-    {\mathcal{L_{LR}}}(\mathbf{x, y}) = \frac{1}{N_{X_{task}}} \sum_{i=0}^{N_{X_{task}}} \log(P(Y=y^{(i)}|\mathbf{x^{(i)}; V_1 (V_0 x + c_0) + c_1})
-\end{split}
+\begin{equation}
+    \mathbb E\left[{\mathcal{L_{LR}}}(\mathbf{x, y})\right] \approx %
+\frac{1}{N_{X_{task}}} \sum_{k=0}^{N_{X_{task}}} \log(P(Y=y^{(k)}|\mathbf{x^{(k)}; V_0, V_1, c_0, c_1})
 \label{eq:lr_loss}
-\end{eqnarray}
+\end{equation}
 
 \paragraph{Layer combination.}
 Importantly, the optimization problem of the linear autoencoder
 and the low-rank logistic regression
-are linked one two levels. First, their transformation matrices mapping from
-input to the latent space are identical
+are linked on two levels. First, their transformation matrices mapping from
+input to the latent space are tied
 \begin{eqnarray}
-  \mathbf{V_0} = \mathbf{W_0}
+  \mathbf{V_0} = \mathbf{W_0}.
 \end{eqnarray}
 We thus search for a compression of the 79,941 voxel values into $n$ latent
 components that represent an optimal latent code for both
@@ -480,13 +479,12 @@ rest and task activity data.
 Second, the objectives of the autoencoder and the low-rank
 logistic regression are interpolated in the common loss function
 
-\begin{eqnarray}
-  \begin{split}
-{arg\,min}_\theta \hspace{0.2cm} {\mathcal{L}}(\theta, \lambda) = \lambda {\mathcal{L_{LR}}}
-+ (1-\lambda)\frac{1}{N_{X_{rest}}} {\mathcal{L_{AE}}} + \ell_1(\theta) + \ell_2(\theta)
+% XXX Michael: In resolving conflict I opted for my change. Feel free to revert if that was intended.
+\begin{equation}
+{\mathcal{L}}(\theta, \lambda) = \lambda {\mathcal{L_{LR}}}
++ (1-\lambda)\frac{1}{N_{X_{rest}}} {\mathcal{L_{AE}}} + \Omega(\theta).
   \label{eq:loss_equ}
-\end{split}
-\end{eqnarray}
+\end{equation}
 
 In so doing, we search for the combined model parameters
 $\theta=\{\mathbf{V_0,V_1,c_0, c_1, b_0, b_1}\}$
@@ -494,15 +492,21 @@ with respect to the (unsupervised) reconstruction error and the
 (supervised) task classification.
 ${\mathcal{L_{AE}}}$ is devided by ${N_{X_{rest}}}$ to equilibrate both
 loss terms to the same order of magnitude.
-For parameter shrinkage, we
-impose a combination of $\ell_1$ and $\ell_2$ penalties
-$\forall p \in \theta$ (i.e., elasticnet).
+\(\Omega(\theta)\) represents a regularization, for which we choose the
+ElasticNet type, i.e. a combination of $\ell_1$ and $\ell_2$ penalties
+$\forall p \in \theta$.
+
+% XXX Michael: To sum up the math in this paragraph: We need to decide what
+% XXX the \mathcal L are supposed to mean - sample wise loss or expected loss
+% XXX or some global deterministic loss (the latter would be bad, because we)
+% XXX are not optimizing it. Right now it looks like a sample-wise loss.
 
 \paragraph{Optimization.}
-The common objective was approximated 
+The common objective was \suggestremove{approximated} \suggestadd{optimized}
 % XXX why 'approximated' ?
 in the neuroimaging data
-by updating parameters by derivates 
+by \suggestremove{updating parameters by derivates}
+\suggestadd{gradient descent in the parameters}
 % XXX derivates ???
 of the 
 semi-supervised low-rank logistic regression.
