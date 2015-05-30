@@ -365,7 +365,7 @@ channel head coil (TR=2400ms, TE=30ms, flip angle=60°, in-plane
 FOV=$192\textrm{mm}\times192\textrm{mm}$, 40 slices, 3.0mm isotropic voxels).
 Standard preprocessing was performed with Nipype \cite{gorgo11}, including
 slice timing, motion correction, alignment, and spatial normalization.
-activity maps were spatially smoothed by
+Activity maps were spatially smoothed by
 a Gaussian kernel of 5mm (FWHM).
 Analogous to HCP data, the second task dataset incorporated 1404
 labeled, grey-matter masked, and z-scored activity maps
@@ -382,17 +382,19 @@ by
 
 \begin{eqnarray}
   \begin{split}
-    \mathbf{z} &= \mathbf{W_0} \mathbf{x} + \mathbf{b_{W_0}} \\
-    \mathbf{x'} &= \mathbf{W_1} \mathbf{z} + \mathbf{b_{W_1}}
+    \mathbf{z} &= \mathbf{W_0} \mathbf{x} + \mathbf{b_0} \\
+    \mathbf{x'} &= \mathbf{W_1} \mathbf{z} + \mathbf{b_1}
   \end{split}
   \label{eq:autoenc}
 \end{eqnarray}
 
-where $\mathbf{x \in \mathbb{R}^{d}}$ denotes the vector of $d=79,941$
+where $\mathbf{x \in \mathbb{R}^{d}}$ denotes the vector of $d=79{,}941$
 voxel values from each
 rest map,
-$\mathbf{z \in \mathbb{R}^{n}}$ is the $n$ hidden dimensions (i.e.,
-distributed neural activity patterns), and 
+$\mathbf{z \in \mathbb{R}^{n}}$ is the $n$\suggestremove{ hidden dimensions 
+(i.e.,
+distributed neural activity patterns)}
+\suggestadd{-dimensional hidden state}, and 
 $\mathbf{x' \in \mathbb{R}^{d}}$
 is the reconstruction vector of the original activity map
 from the hidden variables. 
@@ -403,10 +405,10 @@ from input space into the hidden space (encoder),
 $\mathbf{W_1}$ is the weight matrix for back-projection
 from the hidden variables to the
 output space (decoder).
-$\mathbf{b_{W_0}}$ and $\mathbf{b_{W_1}}$ are bias vectors.
+$\mathbf{b_0}$ and $\mathbf{b_1}$ are bias vectors.
 Note that $\mathbf{W_0}$ and $\mathbf{W_1}$ are tied,
 $\mathbf{W_0} = \mathbf{W_1^T}$.
-The optimal model parameters $\mathbf{W_0, b_{W_0}, b_{W_1}}$ are found by
+The optimal model parameters $\mathbf{W_0, b_0, b_1}$ are found by
 minimizing the imperfection of reconstruction according to squared error
 
 \begin{eqnarray}
@@ -428,7 +430,7 @@ to a class $i \in \mathbb{N}$
 
 \begin{eqnarray}
   \begin{split}
-    P(Y=i|\mathbf{x, V_0,V_1,b_{V_0}, b_{V_1}}) &= softmax_i(\mathbf{V_1 (V_0 x + b_{V_0}) + b_{V_1}}) \\
+    P(Y=i|\mathbf{x, V_0,V_1,c_0, c_1}) &= softmax_i(\mathbf{V_1 (V_0 x + c_0) + c_1}) \\
     &= \frac {e^{\mathbf{V_{1i} (V_{0i} x + b_{V_{0i}}) + b_{V_{1i}}}}} {\sum_j e^{\mathbf{V_{1j} (V_{0j} x + b_{V_{0j}}) + b_{V_{1j}}}}}            
   \end{split}
   \label{eq:lr}
@@ -440,13 +442,13 @@ into $n$ latent components
 and the matrix $\mathbf{V_1 \in \mathbb{R}^{nxc}}$
 projects the latent components
 onto hyperplanes that reflect $c$ class probabilities.
-$\mathbf{b_{V_0}}$ and $\mathbf{b_{V_1}}$ are corresponding
+$\mathbf{c_0}$ and $\mathbf{c_1}$ are corresponding
 bias vectors.
 The loss function is given by
 
 \begin{eqnarray}
   \begin{split}
-    {\mathcal{L_{LR}}}(\mathbf{x, y}) = \frac{1}{N_{X_{task}}} \sum_{i=0}^{N_{X_{task}}} \log(P(Y=y^{(i)}|\mathbf{x^{(i)}; V_1 (V_0 x + b_{V_0}) + b_{V_1}})
+    {\mathcal{L_{LR}}}(\mathbf{x, y}) = \frac{1}{N_{X_{task}}} \sum_{i=0}^{N_{X_{task}}} \log(P(Y=y^{(i)}|\mathbf{x^{(i)}; V_1 (V_0 x + c_0) + c_1})
 \end{split}
 \label{eq:lr_loss}
 \end{eqnarray}
@@ -474,7 +476,7 @@ logistic regression are interpolated in the common loss function
 \end{eqnarray}
 
 In so doing, we search for the combined model parameters
-$\theta=\{\mathbf{V_0,V_1,b_{V_0}, b_{V_1}, b_{W_0}, b_{W_1}}\}$
+$\theta=\{\mathbf{V_0,V_1,c_0, c_1, b_0, b_1}\}$
 with respect to the (unsupervised) reconstruction error and the
 (supervised) task classification.
 ${\mathcal{L_{AE}}}$ is devided by ${N_{X_{rest}}}$ to equilibrate both
