@@ -406,8 +406,6 @@ $\mathbf{W_1}$ is the weight matrix for back-projection
 from the hidden variables to the
 output space (decoder).
 $\mathbf{b_0}$ and $\mathbf{b_1}$ are bias vectors.
-Note that $\mathbf{W_0}$ and $\mathbf{W_1}$ are tied,
-$\mathbf{W_0} = \mathbf{W_1^T}$.
 The optimal model parameters $\mathbf{W_0, b_0, b_1}$ are found by
 minimizing the expected squared reconstruction error
 
@@ -423,9 +421,18 @@ the autoencoder.
 %% This reconstruction error criterion equates with
 %% maximizing a lower bound on the mutual information between
 %% input and the learned representation.
+\suggestadd{
+Here we choose $\mathbf{W_0}$ and $\mathbf{W_1}$ to be tied, i.e.
+$\mathbf{W_0} = \mathbf{W_1^T}$. In particular, this means that the weights
+learned are forced to take a two-fold function: That of \textit{analysis} 
+and that of \textit{synthesis}. Whereas the first layer \textit{analyzes}
+the data in order to obtain the cleanest latent representation, the second
+layer represents building blocks from which to \textit{synthesize} the data
+using the latent activations. Tying these functionalities makes the analysis
+side interpretable and pulls all non-zero singular values towards 1. 
 Nonlinearities were not applied to the
 activations in the first layer.
-
+}
 \paragraph{Reduced-rank logistic regression.}
 Lossy compression by a low-dimensional bottleneck
 is also imposed by the first layer of the low-rank
