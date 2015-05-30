@@ -409,16 +409,21 @@ $\mathbf{b_0}$ and $\mathbf{b_1}$ are bias vectors.
 Note that $\mathbf{W_0}$ and $\mathbf{W_1}$ are tied,
 $\mathbf{W_0} = \mathbf{W_1^T}$.
 The optimal model parameters $\mathbf{W_0, b_0, b_1}$ are found by
-minimizing the imperfection of reconstruction according to squared error
+minimizing the expected squared reconstruction error
 
-\begin{eqnarray}
-  {\mathcal{L_{AE}}}(\mathbf{x}, \mathbf{x'}) = || \mathbf{x} - \mathbf{x'} ||^2
-\end{eqnarray}
-
-This reconstruction error criterion equates with
-maximizing a lower bound on the mutual information between
-input and the learned representation.
-Nonlinearities were not applied on the
+\begin{equation*}
+  \mathbb E\left[{\mathcal{L_{AE}}}(\mathbf{x})\right] = %
+  \mathbb E\left[\| \mathbf{x} - f_{AE}(\mathbf{x}) \|^2\right],
+\end{equation*}
+with \(f_{AE}(\mathbf x) = %
+\mathbf{W_1}(\mathbf{W_0}\mathbf{x} + \mathbf{b_0}) + \mathbf{b_1}\)
+the autoencoder.
+% XXX Michael: I don't know to what extent the following makes sense or is
+% XXX correct, so I am commenting it
+%% This reconstruction error criterion equates with
+%% maximizing a lower bound on the mutual information between
+%% input and the learned representation.
+Nonlinearities were not applied to the
 activations in the first layer.
 
 \paragraph{Reduced-rank logistic regression.}
