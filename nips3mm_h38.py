@@ -561,7 +561,7 @@ for n_comp in n_comps:  #
     plt.figure()
     for p in pkgs:
         lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        n_hidden = int(re.search('comp=(?P<comp>.{1,2})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(?P<comp>.{1,3})_', p).group('comp'))
         if n_comp != n_hidden:
             continue
         
@@ -816,8 +816,9 @@ for n_comp in n_comps:
     plt.show()
     plt.savefig(op.join(WRITE_DIR, 'rec_inds_%icomps.png' % n_comp))
 
-# in-dataset f1 at lambda=0.5
-pkgs = glob.glob(RES_NAME + '/*lambda=1.00*dbg_prfs_.npy')
+# in-dataset f1
+# pkgs = glob.glob(RES_NAME + '/*lambda=1.00*dbg_prfs_.npy')
+pkgs = glob.glob(RES_NAME + '/*dbg_prfs_.npy')
 for n_comp in n_comps:
     plt.figure()
     p_ep = glob.glob(RES_NAME + '/*comp=%i*dbg_epochs_*.npy' % n_comp)
@@ -842,12 +843,15 @@ for n_comp in n_comps:
             cur_label += 'RSpca20'
         cur_label += '/'
         cur_label += 'separate decomp.' if 'decomp_separate' in p else 'joint decomp.'
+        cur_label = 'Logistic regression'
         for i in np.arange(38):
             plt.plot(
                 dbg_epochs_[:len(np.array(dbg_prfs_)[:, 2, i])],
                 np.array(dbg_prfs_)[:, 2, i],
                 label='task %i' % (i + 1))
-    plt.title('Classification performance for 38 tasks')
+    # plt.title('Low-rank logistic regression ($n=%i$, $\lambda=1.0$)' % n_comp)
+    plt.title('Logistic regression (voxel space)')
+    # plt.title('Classification performance for 38 tasks')
     # plt.legend(loc='lower right', fontsize=9)
     # plt.yticks(np.linspace(0., 1., 11))
     plt.ylabel('f1 score (test set)')

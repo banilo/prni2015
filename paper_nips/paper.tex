@@ -12,6 +12,7 @@
 \usepackage{wrapfig}
 \usepackage{afterpage}
 \usepackage{amssymb}
+\usepackage{booktabs}
 
 \def\B#1{\bm{#1}}
 %\def\B#1{\mathbf{#1}}
@@ -414,7 +415,7 @@ logistic regression are interpolated in the common loss function
 
 \begin{eqnarray}
   \begin{split}
-{arg\,min}_\theta \hspace{0.2cm} {\mathcal{L}}(\theta, \lambda) = (\lambda) {\mathcal{L_{LR}}}
+{arg\,min}_\theta \hspace{0.2cm} {\mathcal{L}}(\theta, \lambda) = \lambda {\mathcal{L_{LR}}}
 + (1-\lambda)\frac{1}{N_{X_{rest}}} {\mathcal{L_{AE}}} + \ell_1(\theta) + \ell_2(\theta)
   \label{eq:loss_equ}
 \end{split}
@@ -517,24 +518,24 @@ XXX: Message ??
 
 \begin{figure}
 \begin{centering}
-\includegraphics[width=1.00\textwidth]{figures/figure_weights.jpg}
+\includegraphics[width=1.00\textwidth]{figures/figure_weights_perc75.png}
 \end{centering}
-\caption{\textbf{Comparing the interpretability of classification weights}
+\caption{\textbf{Interpretability of classification weights}
 The voxel predictors corresponding to 5 exemplary
 (of 18 total) psychological tasks (\textit{rows})
 from the HCP dataset \cite{barch2013}.
 \textit{Left column:} ordinary logistic regression (same
 implementation but without bottleneck or autoencoder),
 \textit{middle column:} semi-supervised low-rank logistic regression
-(latent components $n=20$, $\lambda=0.5$, $\ell_1=0.1$, $\ell_2=0.1$),
+($n=20$ latent components, $\lambda=0.5$, $\ell_1=0.1$, $\ell_2=0.1$),
 \textit{right column:} voxel-wise average of whole-brain
-activity maps from each task (thresholded at 0.25).
+activity maps from each task.
 Low-rank logistic regression
 a) puts higher absolute weights on relevant structure
 b) lower ones on irrelevant structure,
 and
 c) yields BOLD-typical local contiguity.
-All values are z-scored and smoothed by a Gaussian (fwhm=4).
+All values are z-scored and thresholded at the 75th percentile.
 }
 \end{figure}
 
@@ -559,26 +560,74 @@ the HCP task data.
 \end{figure}
 
 \section{Experimental Results}
-\paragraph{General}
+\paragraph{Serial versus parallel structure discovery and classification.}
+We first tested for an advantage of combined unsupervised decomposition
+and supervised classification learning.
+We benchmarked against
+performing data reduction on the (unlabeled)
+first half of the HCP data by ICA and SPCA ($n=5, 20, 50, 100$ components)
+and learning classification models in the (labeled) second half
+by ordinary logistic regression.
+%
+ICA performed iterative blind source separation
+by a parallel FASTICA implementation (200 maximum iterations,
+per-iteration tolerance of 0.0001,
+initialized by random mixing matrix, whitening).
+SPCA separated the BOLD signals into
+network components with few regions by
+a regression-type optimization problem constrained by
+$\ell_1$-penalty
+(no orthogonality assumptions, 1000 maximum iterations,
+per-iteration tolerance of 1 * 10\textsuperscript{-8}, sparsity
+alpha=1).
+%
+The second half of the data was projected onto the
+latent components discovered in first data half.
+The ensuing component loadings were submitted to ordinary
+logistic regression
+(one hidden layer, $\ell_1=0.1$, $\ell_2=0.1$, 500 maximum iterations).
+%
+This 2-step approaches were compared against semi-supervised low-rank
+logistic regression
+(SS-LR LogReg, two hidden layers, $\ell_1=0.1$, $\ell_2=0.1$,
+500 maximum iterations, $\lambda=0.75$).
+Importantly, all trained classification models were tested
+on a large, unseen test set (20\% of data) in the presented analyses.
+%
+Across choices for $n$, SS-LR LogReg
+achieved more than 96\% out-of-sample accuracy, whereas
+supervised learning based on ICA and SPCA loadings
+ranged from 37,53\% to 87,28\%
+and
+32,19\% to 83,97\%, respectively (Table \ref{table_one}).
+%
+These explorations attest to the advantage of directly searching for
+classification-relevant structure in the fMRI data,
+rather than solving supervised and unsupervised problems independently.
+This effect was particularly pronounced when assuming few hidden dimensions.
+
+\begin{table}[h]
+ \centering
+ \resizebox{0.4\textwidth}{!}{%
+ \begin{tabular}{lccc}
+ \hline
+ \textit{n}               & ICA + LogReg & SPCA + LogReg & SS-LR LogReg \\ \hline
+ \multicolumn{1}{l|}{5}   & 37,53 \%     & 32,19 \%      & 96,50 \%     \\
+ \multicolumn{1}{l|}{20}  & 80,98 \%     & 78,15 \%      & 97,33 \%     \\
+ \multicolumn{1}{l|}{50}  & 84,19 \%     & 83,97 \%      & 97,69 \%     \\
+ \multicolumn{1}{l|}{100} & 87,28 \%     & 82,19 \%      & 97,80 \%     \\ \hline
+ \end{tabular}
+ }
+ \vspace{-0.2cm}
+ \caption{Serial versus parallel dimensionality reduction and classification}
+ \label{table_one}
+ \end{table}
+
+\paragraph{Model performance.}
 \begin{itemize}
 \item{20 components: high bias/low variance
 100 compoentens: low bias/high variance}
 \end{itemize}
-
-the features of the classes show that we captured activaiton properties,
-not particpant or paradigm properties
-
-out of sample performance: extract features of general relevance
-beyond the supervised problem at hand
-
-support recovery:
-Low-rank logistic regression
-a) puts higher absolute weights on relevant structure
-b) lower ones on irrelevant structure,
-and
-c) yields BOLD-typical local contiguity.
-
-\paragraph{Classification performance}
 \begin{itemize}
   \item{This was evaluated by the prediction
 accuracy on a validation set (20\% of the training data) at each iteration
@@ -594,9 +643,29 @@ over the ARCHI task data}
   \item{important: the thus only resting-state-trained decomposition achieves
   the same usefulness in the ARCHI classification than the
   decomposition derived in semi-supervised fashion}
+
+out of sample performance: extract features of general relevance
+beyond the supervised problem at hand
 \end{itemize}
 
-\paragraph{Support recovery -> feature identification}
+\begin{table}[h]
+  \centering
+  \resizebox{1.00\textwidth}{!}{%
+\begin{tabular}{l|cccc|llllcccc|llll|}
+  \hline
+                            & \multicolumn{4}{c|}{\textit{n = 5}}                                                                                                                & \multicolumn{4}{c|}{\textit{n = 20}}                                                                                                                       & \multicolumn{4}{c}{\textit{n = 100}}                                                       \\ \hline
+  \textit{}                 & \multicolumn{1}{l}{$\lambda=0.25$} & \multicolumn{1}{l}{$\lambda=0.50$} & \multicolumn{1}{l}{$\lambda=0.75$} & \multicolumn{1}{l|}{$\lambda=1.00$} & \multicolumn{1}{l}{$\lambda=0.25$}   & \multicolumn{1}{l}{$\lambda=0.50$}   & \multicolumn{1}{l}{$\lambda=0.75$}   & \multicolumn{1}{l|}{$\lambda=1.00$}   & $\lambda=0.25$   & $\lambda=0.50$   & $\lambda=0.75$   & \multicolumn{1}{l}{$\lambda=1.00$} \\ \hline
+  Out-of-sample\\accuracy   & \textit{88,90\%}                   & 95,13\%                            & \textbf{96,49\%}                   & 95,72\%                             & 97,44\%                              & \textbf{97,80\%}                     & 97,33\%                              & \textit{97,32\%}                      & 97,21\%          & \textit{97,03\%} & \textbf{97,80\%} & 97,38\%                            \\
+  Precision (mean)          & \textit{86,98\%}                   & 94,86\%                            & \textbf{96,28\%}                   & 95,36\%                             & \textbf{97,38\%}                     & 97,06\%                              & \textit{96,98\%}                     & 97,02\%                               & 96,90\%          & \textit{96,47\%} & \textbf{97,50\%} & 96,91\%                            \\
+  Recall (mean)             & \textit{88,27\%}                   & 95,19\%                            & \textbf{96,57\%}                   & 95,70\%                             & \textbf{97,51\%}                     & 97,50\%                              & \textit{97,35\%}                     & 97,36\%                               & 97,20\%          & \textit{97,15\%} & \textbf{97,88\%} & 97,37\%                            \\
+  F1 score (mean)           & \textit{86,64\%}                   & 94,89\%                            & \textbf{96,38\%}                   & 95,43\%                             & \textbf{97,42\%}                     & 97,22\%                              & \textit{97,11\%}                     & 97,13\%                               & 97,00\%          & \textit{96,71\%} & \textbf{97,65\%} & 97,07\%                            \\ \hline
+  Out-of-dataset \\accuracy & 60,83\%                            & \textit{54,30\%}                   & 60,69\%                            & \textbf{62,92\%}                    & 79,72\%                              & \textbf{81,94\%} & 79,72\%           & \textit{79,44\%}                     & \textbf{82,08\%} & 81,66\%            & 81,25\%          & \textit{75,83\%}                   \\ \hline
+  \end{tabular}
+
+}
+\end{table}
+
+\paragraph{Feature identification.}
 \begin{itemize}
   \item{fit for purpose; the right model should have
   high probability in the right places}
@@ -609,27 +678,45 @@ over the ARCHI task data}
   for classification in an independent dataset (ARCHI) as measured by f1 score
   for higher (i.e., 50 and 100) but not lower (i.e., 20) numbers
   of latent components}
+
+support recovery:
+Low-rank logistic regression
+a) puts higher absolute weights on relevant structure
+b) lower ones on irrelevant structure,
+and
+c) yields BOLD-typical local contiguity.
+
+the features of the classes show that we captured activaiton properties,
+not particpant or paradigm properties
 \end{itemize}
 
-\paragraph{Anecdotal observations}
-\begin{itemize}
-  \item{Modifications of the modek that did not improve the generalization performance:
-  drop-out, input corruption (p=0.1/0.3/0.5), RELUs}
-  \item{no penalty or only L1 or L2 penalty generally yielded worse
-  generalization performance}
-  \item{``pretraining'' of the bottleneck by settings weights to
-  preliminary PCA, SPCA or ICA weights did not give better accuracies,
-  neither for autoencoder pretraining }
-  \item{present approach better than first PCA, SPCA or ICA and
-  subsequently Logreg on loadings, even if each on the whole data}
-  \item{introducing a
-  nonlinearity (sigmoid, tanh, softplus) into the system
-  did not improve predictive accuracy but
-  elastic did -> most useful decomposition has characteristics of a SPCA
-  and not PCA or ICA}
-  \item{introduced an addition layer with many units (50/100) did not
-  improve generalization}
-\end{itemize}
+\paragraph{Miscellaneous observations.}
+For the sake of completeness,
+we informally report modifications of the model
+that did not improve the generalization performance.
+%
+Introducing stochasticity into model learning by 
+a) input corruption of $\mathbf{X_{task}}$ or
+b) drop-out at the bottleneck $\mathbf{W_0}$ using binomial
+distributions ($p=0.1, 0.3, 0.5$) deteriorated model performance
+in all instances. 
+%
+Adding c) rectified linear units (ReLU) to $\mathbf{W_0}$ or
+other commonly used nonlinearities (d) sigmoid, e) softplus,
+f) hyperbolic tangent) all led to smaller classification accuracies.
+%
+Further, g) ``pretraining'' of the bottleneck $\mathbf{W_0}$
+(i.e., non-random initialization) by 
+either corresponding SPCA or ICA loadings did not exhibit improved accuracies,
+neither did h) autoencoder pretraining.
+%
+Moreover,
+introducing an additional i) overcomplete layer (100 units)
+after the bottleneck was not advantageous.
+%
+Finally, imposing imposing either j) only $\ell_1$-penalty or 
+k) only $\ell_2$-penalty was disadvantageous in all tested cases,
+which favored elasticnet regularization chosen in the above analyses.
 
 \section{Discussion and Conclusion}
 % Conceptual recap+gain of current paper
