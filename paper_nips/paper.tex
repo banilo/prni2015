@@ -409,10 +409,10 @@ $\mathbf{b_0}$ and $\mathbf{b_1}$ are bias vectors.
 The optimal model parameters $\mathbf{W_0, b_0, b_1}$ are found by
 minimizing the expected squared reconstruction error
 
-\begin{equation*}
+\begin{equation}
   \mathbb E\left[{\mathcal{L_{AE}}}(\mathbf{x})\right] = %
   \mathbb E\left[\| \mathbf{x} - f_{AE}(\mathbf{x}) \|^2\right],
-\end{equation*}
+\end{equation}
 with \(f_{AE}(\mathbf x) = %
 \mathbf{W_1}(\mathbf{W_0}\mathbf{x} + \mathbf{b_0}) + \mathbf{b_1}\)
 the autoencoder.
@@ -424,8 +424,9 @@ the autoencoder.
 \suggestadd{
 Here we choose $\mathbf{W_0}$ and $\mathbf{W_1}$ to be tied, i.e.
 $\mathbf{W_0} = \mathbf{W_1^T}$. In particular, this means that the weights
-learned are forced to take a two-fold function: That of \textit{analysis} 
-and that of \textit{synthesis}. Whereas the first layer \textit{analyzes}
+learned are forced to take a two-fold function: That of signal 
+\textit{analysis} and that of signal \textit{synthesis}.
+Whereas the first layer \textit{analyzes}
 the data in order to obtain the cleanest latent representation, the second
 layer represents building blocks from which to \textit{synthesize} the data
 using the latent activations. Tying these functionalities makes the analysis
