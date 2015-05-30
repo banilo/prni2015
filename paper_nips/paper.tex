@@ -13,6 +13,7 @@
 \usepackage{afterpage}
 \usepackage{amssymb}
 \usepackage{booktabs}
+\usepackage{ulem}
 
 \def\B#1{\bm{#1}}
 %\def\B#1{\mathbf{#1}}
@@ -53,6 +54,9 @@ high-dimensional neuroimaging data}
 \newtheorem{cor}[thm]{Corollary}
 
 
+\newcommand{\suggestadd}[1]{{\color{blue} #1}}
+\newcommand{\suggestremove}[1]{{\color{red} \sout{#1}}}
+
 \nipsfinalcopy % Uncomment for camera-ready version
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -74,9 +78,14 @@ neural structure or testing of neural structure associated with mental tasks.
 However, testing hypotheses on the neural correlates of mental tasks
 depends on the representation of the observations.
 %
+% XXX Michael: Added explicit outline of the model, description can be 
+% XXX improved
 We therefore propose to optimize
 representation and task classification in
-an identical statistical learning problem.
+\suggestremove{an identical} \suggestadd{a unified} statistical learning 
+problem\suggestadd{, by introducing a multinomial logistic regression with
+joint rank constraint, which we regularize by forcing representational
+capacity in the form of an autoencoder}.
 %
 We show that this approach yields more accurate and more interpretable
 neural models of psychological tasks in a reference dataset.
