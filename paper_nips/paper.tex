@@ -154,19 +154,23 @@ signal exhibits spatially distributed \suggestremove{activity} patterns
 \suggestadd{of coherent activity}.
 %
 Second, existing supervised neuroimaging analyses
-do not acknowledge the abundance
+\suggestremove{do not acknowledge} \suggestadd{cannot exploit} the abundance
 of easily acquired resting-state data \cite{biswaldiscovery}.
-These may allow better sampling the manifold of brain states
+These may allow better \suggestremove{sampling} \suggestadd{discovery of} 
+the manifold of brain states
 due to the high task-rest similarities of neural activity patterns,
 as observed using ICA \cite{smith2009}.
 
+% XXX Michael: This parenthesis structure should probably be unravelled into
+% XXX a sentence.
 Both these biological properties can be conjointly exploited in a mixed
- (i.e., use task and rest data)
-low-rank (i.e., perform network decomposition)
+ (i.e., using task and rest data)
+low-rank (i.e., performing network decomposition)
 approach.
 %
 The integration of brain-network discovery into
 supervised classification formally yields a semi-supervised learning
+% XXX Michael: No, it doesn't necessarily. You can do that with labeled data
 framework. The most relevant
 neurobiological structure should hence be identified
 for the prediction problem at hand.
@@ -191,55 +195,85 @@ including PCA, SPCA, and ICA \cite{hinton06}.
 \end{wrapfigure}
 %
 Autoencoders
-are one-layered learning models that condense the input data to
-local and global representations
-by improving reconstruction from them.
+are \suggestremove{one-layered} learning models 
+that condense the input data to
+\suggestremove{local and global} \suggestadd{(typically lower-dimensional)} 
+representations
+by \suggestremove{improving} \suggestadd{optimizing}
+reconstruction from them.
 %
-They behave like a PCA
+% XXX Michael: In fact, they behave like a non-centered PCA, 
+% XXX which amounts to just doing an SVD
+% XXX which btw is NOT a convex optimization problem, although easy to 
+% XXX calculate and with a global optimum.
+% XXX Autoencoders are also not one-layered by default. Let's make sure that
+% XXX we don't trip up by getting the technicalities wrong and getting 
+% XXX reviewers annoyed at us because of it.
+They behave like a \suggestadd{(truncated, non-centered)} PCA
 in case of one linear hidden layer and a squared error loss
 \cite{baldi1989neural}.
-This architecture yields a convex optimization objective
+This architecture yields a \suggestadd{non-}convex optimization objective
 with unique global minimum.
 Autoencoders behave like a SPCA if shrinkage terms are added to the
 model weights in the optimization objective.
 Moreover, they have the characteristics of an ICA in case of tied weights
 and adding a nonlinear convex transformation \cite{le2011ica}.
+% XXX What convex transformation? Why is that relevant? Convexity is only
+% XXX relevant for the loss
 These authors further demonstrated that ICA, sparse autoencoders, and 
 sparse coding are mathematically equivalent
 under mild conditions.
 %
 Hence, autoencoders can flexibly project the neuroimaging data
-onto the main axes of variation and thus
+onto the main axes of variation and thus % XXX Michael <- that's PCA
 reverse-engineer properties of the underlying
 neural processes \cite{olshausen96}.
+% XXX Michael ^ I don't get that last part nor the citation.
 
 In the present investigation,
-a linear autoencoder will be fed by (unlabeled) rest data and
-integrated as bottleneck
-into a low-rank logistic regression fed by (labeled) task data.
+a linear autoencoder will be \suggestremove{fed by} \suggestadd{fit to} 
+(unlabeled) rest data and
+integrated as \suggestadd{a rank-reducing} bottleneck
+into a \suggestremove{low-rank} \suggestadd{multinomial} 
+logistic regression \suggestremove{fed by} \suggestadd{fit to} 
+(labeled) task data.
 We can then solve the unsupervised data representation and the
 supervised classification in an identical statistical learning
 problem.
 %
 From the perspective of dictionary learning, the first layer represents
-the discovered set of basis functions
+% XXX Michael: This is the crucial difference: The first layer is an analysis
+% XXX operation: it extracts information in some way. It may be extracting
+% XXX activations for basis functions, in which case it would be the pseudo-
+% XXX inverse of those basis functions. But unless they are orthogonal, these
+% XXX weights definitely don't represent basis functions themselves. It is 
+% XXX the second layer of the autoencoder that represents basis functions. If
+% XXX weights are tied, they are one and the same thing, with interesting
+% XXX implications. But in general, only the second layer represents a basis.
+\suggestadd{projectors to} the discovered set of basis functions
 whose linear combinations are learned
 by the second layer \cite{olshausen96}.
+% XXX Michael: ^ This needs to be changed around: This first layer obtains
+% XXX activations, the second layer weights are basis functions which are
+% XXX multiplied to these activations
 %
 Neurobiologically, this allows 
-delineating a low-dimensional manifold of brain network patterns and then 
+delineating a low-dimensional \suggestremove{manifold}
+\suggestadd{vector space} of brain network patterns and then 
 distinguishing mental tasks
 by their most discriminative linear combinations.
 %
 Theoretically, a reduction in model variance should be achieved by
 resting-state autoencoders that
 put probability mass on the most neurobiologically
+% XXX Michael: ^ MEH, we are not really in a probabilistic setting ...
 valid models in the hypothesis set.
 %
 Taken together,
 the important modes of variation in brain dynamics and
 the neural correlates subserving mental operations
 have mostly been studied in isolation.
+% XXX Michael: Taken together, the important modes of variation in brain dynamics and the neural correlates subserving mental operations have mostly been studied in isolation? Are they taken together, or isolated? :)
 We provide a principled computational framework to link these previously
 unconnected domains of systems neuroscience.
 
