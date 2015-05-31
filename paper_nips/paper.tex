@@ -75,8 +75,7 @@ biology in ever-increasing datasets.
 Existing neuroimaging methods typically perform either discovery of unknown
 neural structure or testing of neural structure associated with mental tasks.
 %
-However, testing hypotheses on the neural correlates of mental tasks
-depends on the representation of the observations.
+However, testing hypotheses on the neural correlates of an increasing number of mental tasks makes it crucial to represent the observations adequately.
 %
 We therefore propose to optimize
 representation and task classification in
@@ -87,7 +86,7 @@ constrained by joint rank with a representation-enforcing
 autoencoder.
 %
 We show that this approach yields more accurate and more interpretable
-neural models of psychological tasks in a reference dataset.
+neural models of psychological tasks in a reference dataset, and better generalization to other datasets.
 %
 
 \textbf{keywords}: dimensionality reduction; semi-supervised learning;
@@ -111,7 +110,7 @@ functionally interacting regions \cite{smith2009}.
 Similarly, sparse principal component analysis (SPCA) \cite{varoqu2011}
 has been used to
 separate BOLD signals into parsimonious network components.
-Thus extracted brain networks are probably
+The extracted brain networks are probably
 manifestations of electrophysiological oscillation frequencies \cite{hipp15}.
 Their fundamental organizational role is further
 attested by continued covariation during sleep and anesthesia \cite{fox07}.
@@ -225,6 +224,7 @@ onto the main axes of variation and thus % XXX Michael <- that's PCA
 reverse-engineer properties of the data-generating
 processes in the brain \cite{olshausen96}.
 % XXX Michael ^ I don't get that last part nor the citation.
+\textbf{XXX Bertrand: neither do I. I think you exxagerate.}
 % Danilo: that is the magic
 
 In the present investigation,
@@ -271,6 +271,11 @@ the neural correlates subserving mental operations
 have mostly been studied in isolation.
 We provide a principled computational framework to link these previously
 unconnected domains of systems neuroscience.
+
+\textbf{XXX Bertrand: I think that you could emphasize the problem that we are always data-poor, so that the set of representations that  can be extracted from SPMs taken from  a few tens of subjects is limited. What you propose it to extend it by i) co-analysing many problems simultaneously (multi-task) and using unlabled data that spana space of meaningful configurations
+}
+\textbf{XXX Bertrand: We need a sentence like: Our contribution is 1. XXX 2.YYY etc.}
+
 
 \section{Methods}
 %
