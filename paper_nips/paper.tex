@@ -581,67 +581,6 @@ accessible online for reproducibility and reuse
 \url{http://github.com/anonymous/anonymous}.
 % url{http://github.com/banilo/nips2015}.
 
-\bigskip
-\begin{figure}
-\begin{centering}
-\includegraphics[width=1.00\textwidth]{figures/accuracies.png}
-\end{centering}
-\caption{\textbf{Generalization performance}
-Depicts in-sample (apply current model on training set, \textit{left column}),
-out-of-sample (current model on test set, \textit{middle column}),
-and out-of-dataset (compress other dataset using the
-learned decomposition for classification, \textit{right column}) accuracy.
-Curves for different choices of $\lambda$ as well as for ordinary
-logistic regression (\textit{yellowish})
-across iterations over the HCP task data (epochs).
-XXX: Message ??
-}
-\end{figure}
-
-\begin{figure}
-\begin{centering}
-\includegraphics[width=1.00\textwidth]{figures/figure_weights_perc75.png}
-\end{centering}
-\caption{\textbf{Interpretability of classification weights}
-The voxel predictors corresponding to 5 exemplary
-(of 18 total) psychological tasks (\textit{rows})
-from the HCP dataset \cite{barch2013}.
-\textit{Left column:} ordinary logistic regression (same
-implementation but without bottleneck or autoencoder),
-\textit{middle column:} semi-supervised low-rank logistic regression
-($n=20$ latent components, $\lambda=0.5$, $\ell_1=0.1$, $\ell_2=0.1$),
-\textit{right column:} voxel-wise average of whole-brain
-activity maps from each task.
-Low-rank logistic regression
-a) puts higher absolute weights on relevant structure
-b) lower ones on irrelevant structure,
-and
-c) yields BOLD-typical local contiguity.
-All values are z-scored and thresholded at the 75th percentile.
-}
-\end{figure}
-
-\begin{figure}
-% XXX: figure not readable
-\begin{centering}
-\includegraphics[width=1.00\textwidth]{figures/semisup.png}
-\end{centering}
-\caption{\textbf{Relation between support recovery and out-of-dataset performance}
-\textit{Upper row:} the fit-for-purpose of the classification models
-is quantified by linear correlation between the
-z-scored average task image and the z-scored weights from
-ordinary (\textit{red}) and present (\textit{blue colors}) logistic
-regression ($\lambda=0.25, 0.50, 0.75, 1.00$).
-\textit{Lower row:} ordinary logistic regression is applied to the
-ARCHI dataset after projection into the latent dimensions learned from
-the HCP task data.
-\textbf{whenever I tried to have 3+ times more rest than task images results dropped dramatically...naive interpretation: if the rest information is too rich it overrules task patterns and hinders the supervised learning
-{\color{blue} Michael: Does this also happen when you double the task data?
-i.e. rest:task 3:1, but duplicate the task data, yielding essentially 3:2?
-I assume this will work, which again points to the instability of the network architecture}}
-}
-\end{figure}
-
 \section{Experimental Results}
 \paragraph{Serial versus parallel structure discovery and classification.}
 We first tested for an advantage of combined unsupervised decomposition
@@ -691,7 +630,7 @@ This effect was particularly pronounced when assuming few hidden dimensions.
 
 \begin{table}[h]
  \centering
- \resizebox{0.4\textwidth}{!}{%
+ \resizebox{0.5\textwidth}{!}{%
  \begin{tabular}{lccc}
  \hline
  \textit{n}               & ICA + LogReg & SPCA + LogReg & SS-LR LogReg \\ \hline
@@ -707,71 +646,189 @@ This effect was particularly pronounced when assuming few hidden dimensions.
  \end{table}
 
 \paragraph{Model performance.}
-\begin{itemize}
-\item{20 components: high bias/low variance
-100 compoentens: low bias/high variance}
-\end{itemize}
-\begin{itemize}
-  \item{This was evaluated by the prediction
-accuracy on a validation set (20\% of the training data) at each iteration
-over the ARCHI task data}
-  \item{the less lambda, the faster the convergence, with small differences
-  though; smaller differences with larger number of components}
-  \item{both 20 and 100 hidden components achieve 97\% out-of-sample
-  accuracy}
-  \item{ordinary logistic regression converges faster but with stagnation at
-  92\% out-of-sample accuracy}
-  \item{classification at chance 6\% in case of lambda==0 because 
-  only the unsupervised layer of the estimator is optimized}
-  \item{important: the thus only resting-state-trained decomposition achieves
-  the same usefulness in the ARCHI classification than the
-  decomposition derived in semi-supervised fashion}
-
-out of sample performance: extract features of general relevance
-beyond the supervised problem at hand
-\end{itemize}
+SS-LR LogReg was subsequently trained ($500$ epochs) across parameter choices
+for the hidden components ($n=5, 20, 100$) and
+the balance between autoencoder and logistic regression
+($\lambda=0.25, 0.5, 0.75, 1$).
+Assuming 5 latent directions of variation should yield models with
+higher bias and smaller variance then SS-LR LogReg with 100 latent directions.
+%
+Given the 18-class problem of HCP, setting $\lambda$ to $0$
+consistently yields generalization performance
+at chance-level (5,6\%) because
+only the unsupervised layer of the estimator is optimized.
+%
+At each epoch (i.e., iteration over the data),
+the out-of-sample performance of the trained classifier
+was assessed on 20\% of unseen HCP data.
+Additionally, the ``out-of-dataset performance'' of the learned decomposition
+was assessed by using it as dimensionality reduction of an
+independent labaled dataset (i.e., ARCHI) and conducting ordinary
+logistic regression on the ensuing component loadings.
 
 \begin{table}[h]
   \centering
   \resizebox{1.00\textwidth}{!}{%
-\begin{tabular}{l|cccc|llllcccc|llll|}
+\begin{tabular}{l|cccc|cccc|cccc|cccc|}
   \hline
-                            & \multicolumn{4}{c|}{\textit{n = 5}}                                                                                                                & \multicolumn{4}{c|}{\textit{n = 20}}                                                                                                                       & \multicolumn{4}{c}{\textit{n = 100}}                                                       \\ \hline
-  \textit{}                 & \multicolumn{1}{l}{$\lambda=0.25$} & \multicolumn{1}{l}{$\lambda=0.50$} & \multicolumn{1}{l}{$\lambda=0.75$} & \multicolumn{1}{l|}{$\lambda=1.00$} & \multicolumn{1}{l}{$\lambda=0.25$}   & \multicolumn{1}{l}{$\lambda=0.50$}   & \multicolumn{1}{l}{$\lambda=0.75$}   & \multicolumn{1}{l|}{$\lambda=1.00$}   & $\lambda=0.25$   & $\lambda=0.50$   & $\lambda=0.75$   & \multicolumn{1}{l}{$\lambda=1.00$} \\ \hline
-  Out-of-sample\\accuracy   & \textit{88,90\%}                   & 95,13\%                            & \textbf{96,49\%}                   & 95,72\%                             & 97,44\%                              & \textbf{97,80\%}                     & 97,33\%                              & \textit{97,32\%}                      & 97,21\%          & \textit{97,03\%} & \textbf{97,80\%} & 97,38\%                            \\
-  Precision (mean)          & \textit{86,98\%}                   & 94,86\%                            & \textbf{96,28\%}                   & 95,36\%                             & \textbf{97,38\%}                     & 97,06\%                              & \textit{96,98\%}                     & 97,02\%                               & 96,90\%          & \textit{96,47\%} & \textbf{97,50\%} & 96,91\%                            \\
-  Recall (mean)             & \textit{88,27\%}                   & 95,19\%                            & \textbf{96,57\%}                   & 95,70\%                             & \textbf{97,51\%}                     & 97,50\%                              & \textit{97,35\%}                     & 97,36\%                               & 97,20\%          & \textit{97,15\%} & \textbf{97,88\%} & 97,37\%                            \\
-  F1 score (mean)           & \textit{86,64\%}                   & 94,89\%                            & \textbf{96,38\%}                   & 95,43\%                             & \textbf{97,42\%}                     & 97,22\%                              & \textit{97,11\%}                     & 97,13\%                               & 97,00\%          & \textit{96,71\%} & \textbf{97,65\%} & 97,07\%                            \\ \hline
-  Out-of-dataset \\accuracy & 60,83\%                            & \textit{54,30\%}                   & 60,69\%                            & \textbf{62,92\%}                    & 79,72\%                              & \textbf{81,94\%} & 79,72\%           & \textit{79,44\%}                     & \textbf{82,08\%} & 81,66\%            & 81,25\%          & \textit{75,83\%}                   \\ \hline
+                            & \multicolumn{4}{c|}{\textit{n = 5}}                                                                                                            & \multicolumn{4}{c|}{\textit{n = 20}}                                                                                                                   & \multicolumn{4}{c}{\textit{n = 100}}                                                       \\ \hline
+  \textit{}                 & \multicolumn{1}{l}{$\lambda=0.25$} & \multicolumn{1}{l}{$\lambda=0.5$} & \multicolumn{1}{l}{$\lambda=0.75$} & \multicolumn{1}{l|}{$\lambda=1$} & \multicolumn{1}{l}{$\lambda=0.25$}   & \multicolumn{1}{l}{$\lambda=0.5$}   & \multicolumn{1}{l}{$\lambda=0.75$}   & \multicolumn{1}{l|}{$\lambda=1$}   & $\lambda=0.25$   & $\lambda=0.5$    & $\lambda=0.75$   & \multicolumn{1}{l}{$\lambda=1$}    \\ \hline
+  Out-of-sample\\accuracy   & \textit{88,90\%}                   & 95,13\%                            & \textbf{96,49\%}                  & 95,72\%                          & 97,44\%                              & \textbf{97,80\%}                    & 97,33\%                              & \textit{97,32\%}                   & 97,21\%          & \textit{97,03\%} & \textbf{97,80\%} & 97,38\%                            \\
+  Precision (mean)          & \textit{86,98\%}                   & 94,86\%                            & \textbf{96,28\%}                  & 95,36\%                          & \textbf{97,38\%}                     & 97,06\%                             & \textit{96,98\%}                     & 97,02\%                            & 96,90\%          & \textit{96,47\%} & \textbf{97,50\%} & 96,91\%                            \\
+  Recall (mean)             & \textit{88,27\%}                   & 95,19\%                            & \textbf{96,57\%}                  & 95,70\%                          & \textbf{97,51\%}                     & 97,50\%                             & \textit{97,35\%}                     & 97,36\%                            & 97,20\%          & \textit{97,15\%} & \textbf{97,88\%} & 97,37\%                            \\
+  F1 score (mean)           & \textit{86,64\%}                   & 94,89\%                            & \textbf{96,38\%}                  & 95,43\%                          & \textbf{97,42\%}                     & 97,22\%                             & \textit{97,11\%}                     & 97,13\%                            & 97,00\%          & \textit{96,71\%} & \textbf{97,65\%} & 97,07\%                            \\ \hline
+  Out-of-dataset \\accuracy & 60,83\%                            & \textit{54,30\%}                   & 60,69\%                           & \textbf{62,92\%}                 & 79,72\%                              & \textbf{81,94\%} & 79,72\%          & \textit{79,44\%}                     & \textbf{82,08\%} & 81,66\%         & 81,25\%          & \textit{75,83\%}                   \\ \hline
   \end{tabular}
-
 }
+\vspace{-0.2cm}
+ \caption{Performance of SS-LR LogReg across model parameter choices}
+  \label{table_two}
 \end{table}
 
-\paragraph{Feature identification.}
-\begin{itemize}
-  \item{fit for purpose; the right model should have
-  high probability in the right places}
-  \item{comparing to ordinary logistic regression, low-rank logreg yielded class weights 
-  that were much more similar to feature of the respective training examples,
-  for any choice of $\lambda$}
-  \item{the higher $\lambda$, the better support recovery}
-  \item{conversely, the higher lambda (i.e., bigger emphasis on the
-  resting-state autoencoder), the more useful the low-dimensional transformations
-  for classification in an independent dataset (ARCHI) as measured by f1 score
-  for higher (i.e., 50 and 100) but not lower (i.e., 20) numbers
-  of latent components}
+We made several noteworthy observations.
+%
+First, the purely supervised estimator ($\lambda=1$) achieved in no
+instance the best accuracy, precision, recall or f1 scores on HCP data.
+Classification by low-rank logistic regression is therefore facilitated by
+imposing structure from the unlabeled rest data.
+%
+Second, the higher the number of latent components $n$,
+the higher the out-of-dataset performance with small choices for $\lambda$.
+This suggests that the presence of more rest-data-inspired hidden components
+yields to more effective feature representation in unrelated task data.
+%
+Third, for $n=20$ and $100$ (but not $5$) the purely rest-data-trained
+decomposition matrix ($\lambda=0$) resulted in
+noninferior out-of-dataset performance
+of X and Y, respectively (not shown in Table \ref{table_two}).
+This confirms that guiding model learning by task-unrelated structure
+extract features of general relevance
+beyond the supervised problem at hand.
 
-support recovery:
+Depicts f1 scores for prediction of each of 38 classes across training epochs.
+Ordinary logistic regression operating in voxel space (\textit{left plot})
+converged faster but performed worse than
+low-rank logistic regression for few
+(\textit{middle plot}) and many (\textit{right plot}).
+Autoencoder or rest data were not used for these analyses
+($\lambda=1$).
+Hence, projecting the input data into a reduced space for classification
+yields higher class separability.
+
+\paragraph{Individual effects of dimensionality reduction and rest data.}
+We first quantified the gain of introducing a bottleneck layer
+disregaring the autoencoder.
+To this end, ordinary logstic regression was juxtaposed
+with LR LogRed at $\lambda=1$ (no autoencoder).
+For this experiment, we increased the difficulty of the classification problem
+by including data from all 38 HCP tasks.
+Indeed, increased class separability in component space,
+as compared to voxel space, entails differences in f1 score of
+$\approx{17\%}$ (Figure \ref{fig_dimred}).
+
+\begin{figure}
+\begin{centering}
+\includegraphics[width=1.00\textwidth]{figures/accuracies.png}
+\end{centering}
+\vspace{-0.5cm}
+\caption{\textbf{Effect of bottleneck in a 38-task classificaton problem}
+Depicts f1 scores for prediction of each of 38 classes across training epochs.
+Ordinary logistic regression operating in voxel space (\textit{left plot})
+converged faster but performed worse than
+low-rank logistic regression for few
+(\textit{middle plot}) and many (\textit{right plot}).
+Autoencoder or rest data were not used for these analyses
+($\lambda=1$).
+Hence, projecting the input data into a reduced space for classification
+yields higher class separability.
+}
+\label{fig_dimred}
+\end{figure}
+
+We then quantified the impact of structure from rest data keeping
+all model parameters constant
+($n=20$, $\lambda=0.5$, $\ell_1=0.1$, $\ell_2=0.1$).
+At the beginning of every epoch,
+2000 task and 2000 rest maps were drawn with replacement
+from same amounts of task maps but varying amounts of rest maps.
+In frequently encountered data-scarce settings ($\approx{100}$ samples),
+but not in data-rich settings ($\approx{1000}$ samples),
+the repertoire of rest structure modulates model performance
+(Figure \ref{fig_semisup}).
+
+\begin{figure}
+\begin{centering}
+\includegraphics[width=1.00\textwidth]{figures/semisup_both.png}
+\end{centering}
+\vspace{-0.5cm}
+\caption{\textbf{Effect of richness in rest data}
+Gradient descent was performed on 2000 task and 2000 rest images.
+These were drawn with replacement from identical versus varying
+quantities of task versus rest maps, at the begining of each epoch.
+}
+\label{fig_semisup}
+\end{figure}
+
+\paragraph{Feature identification.}
+We finally examined whether the models
+were fit for purpose
+(Figure \ref{fig_weights}).
+%
+To this end, we computed Pearson's correlation between the classifier weights
+and the averaged neural activity map for each of the 18 tasks.
+%
+Ordinary logistic regression thus yielded a mean feature identification
+of $\rho=0.28$.
+%
+For SS-LR LogReg ($\lambda=0.25, 0.5, 0.75, 1$),
+a per-class-weight map was computed by matrix
+multiplication of the two inner layers.
+Feature identification thus ranged
+between $\rho=0.35$ and $\rho=0.55$ for $n=5$,
+between $\rho=0.59$ and $\rho=0.69$ for $n=20$, and
+between $\rho=0.58$ and $\rho=0.69$ for $n=100$.
+%
+Consequently,
+SS-LR LogReg puts higher absolute weights on relevant structure.
+This reflect a higher signal-to-noise ratio, in part explained
+by the more BOLD-typical local contiguity.
+%
+Conversely, SS-LR LogReg puts lower probability mass on irrelevant structure.
+Despite lower interpretability, the
+salt-and-pepper-like weight maps obtained from
+ordinary logistic regression are sufficient for
+good classification performance.
+%
+Hence, SS-LR LogReg yielded class weights 
+that were much more similar to features of the respective training samples
+for any choice of $\lambda$.
+SS-LR LogReg captures genuine properties of neural activity patterns,
+rather than participant- or paradigm-specific artefacts.
+
+\begin{figure}
+\begin{centering}
+\includegraphics[width=0.98\textwidth]{figures/figure_weights_perc75.png}
+\end{centering}
+\vspace{-0.1cm}
+\caption{\textbf{Classification weight maps}
+The voxel predictors corresponding to 5 exemplary
+(of 18 total) psychological tasks (\textit{rows})
+from the HCP dataset \cite{barch2013}.
+\textit{Left column:} ordinary logistic regression (same
+implementation but without bottleneck or autoencoder),
+\textit{middle column:} semi-supervised low-rank logistic regression
+($n=20$ latent components, $\lambda=0.5$, $\ell_1=0.1$, $\ell_2=0.1$),
+\textit{right column:} voxel-wise average of whole-brain
+activity maps from each task.
 Low-rank logistic regression
 a) puts higher absolute weights on relevant structure
 b) lower ones on irrelevant structure,
 and
 c) yields BOLD-typical local contiguity.
-
-the features of the classes show that we captured activaiton properties,
-not particpant or paradigm properties
-\end{itemize}
+All values are z-scored and thresholded at the 75th percentile.
+}
+\label{fig_weights}
+\end{figure}
 
 \paragraph{Miscellaneous observations.}
 For the sake of completeness,

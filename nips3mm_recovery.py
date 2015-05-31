@@ -27,6 +27,7 @@ print('Running THEANO on %s' % theano.config.device)
 from nilearn.image import concat_imgs
 import joblib
 import time
+from scipy.stats import zscore
 
 LR_AE_DIR = 'nips3mm'
 LR_DIR = 'nips3mm_vanilla'
@@ -274,7 +275,6 @@ for itask, task in enumerate(HCP_contrasts):
 mean_supp_z = zscore(mean_supp, axis=1)
     
 # get classification weights
-from scipy.stats import zscore
 lr_supp = np.load(op.join(LR_DIR, 'V0comps.npy'))
 lr_supp_z = zscore(lr_supp, axis=1)
 
@@ -283,7 +283,7 @@ WRITE_DIR = 'nips3mm_recovery'
 lambs = [0.25, 0.5, 0.75, 1]
 import re
 from scipy.stats import pearsonr
-for n_comp in [20, 50, 100]:
+for n_comp in [5]:
     corr_means_lr = np.zeros((len(lambs), 18))
     corr_means_lr_ae = np.zeros((len(lambs), 18))
     for ilamb, lamb in enumerate(lambs):
@@ -322,7 +322,7 @@ for n_comp in [20, 50, 100]:
     plt.ylabel('correlation r')
     plt.title('Support Recovery: normal versus low-rank logistic regression\n'
               '%i components' % n_comp)
-    tick_strs = [u'normal'] + [u'low-rank $λ=%.2f$' % val for val in lambs]
+    tick_strs = [u'normal'] + [u'low-rank lambda=%.2f' % val for val in lambs]
     plt.xticks(np.arange(6) + 1, tick_strs, rotation=320)
     plt.ylim(0, 1.0)
     plt.yticks(np.linspace(0, 1., 11), np.linspace(0, 1., 11))
