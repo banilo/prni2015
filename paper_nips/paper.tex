@@ -370,13 +370,16 @@ labeled, grey-matter masked, and z-scored activity maps
 from 18 diverse tasks acquired in 78 participants.
 
 The labeled and unlabeled data were fed into a linear statistical model
-composed of autoencoder and low-rank logistic regression.
+composed of an autoencoder and low-rank logistic regression.
+
+
+XXX (Bertrand): You can simplify data description if needed for the sake of place. It's OK as long as you can refer to a more complete publication describing the data.
 
 \paragraph{Linear autoencoder.}
 The affine autoencoder takes the input 
 $\mathbf{x}$ and projects it into coordinates of a
 latent representation $\mathbf{z}$
-by
+and reconstructs it back to $\mathbf{x'}$ by
 
 \begin{eqnarray}
   \begin{split}
@@ -407,11 +410,11 @@ minimizing the expected squared reconstruction error
 
 \begin{equation}
   \mathbb E\left[{\mathcal{L_{AE}}}(\mathbf{x})\right] = %
-  \mathbb E\left[\| \mathbf{x} - f_{AE}(\mathbf{x}) \|^2\right],
+  \mathbb E\left[\| \mathbf{x} - \mathbf{W_1}(\mathbf{W_0}\mathbf{x} + \mathbf{b_0}) + \mathbf{b_1}) \|^2\right],
 \end{equation}
-with \(f_{AE}(\mathbf x) = %
-\mathbf{W_1}(\mathbf{W_0}\mathbf{x} + \mathbf{b_0}) + \mathbf{b_1}\)
-the autoencoder.
+%with \(f_{AE}(\mathbf x) = %
+%\mathbf{W_1}(\mathbf{W_0}\mathbf{x} + \mathbf{b_0}) + \mathbf{b_1}\)
+% the autoencoder.
 % XXX Michael: I don't know to what extent the following makes sense or is
 % XXX correct, so I am commenting it
 % XXX Danilo: I found this in Bengio's papers somewhere
@@ -512,12 +515,19 @@ As solver, we chose \textit{rmsprop} \cite{rmsprop}.
 This procedure dictates an adaptive learning rate
 for each model parameter by
 scaled gradients from a running average.
-Gradient normalization by rmsprop
+Gradient normalization by \textit{rmsprop}
 is known to effectively exploit curvature information.
 We opted for a small batch size of $100$, given the high degree of
 redundancy in $X_{rest}$ and $X_{task}$.
 The matrix parameters were initalized by Gaussian random values multiplied
-by a gain of $0.004$. The bias parameters were initalized to zero.
+by a gain of $0.004$. 
+%
+
+XXX: Sorry, I don't like magic numbers. Please explain where this comes from
+ ? Maybe $\sqrt{1 / p}$ ?
+
+%
+The bias parameters were initalized to zero.
 With a slight abuse of notation, let $\theta$ denote a component of $\theta$.
 The normalization factor and the update rule for $\theta$
 are given by
@@ -544,6 +554,7 @@ are given by
 % XXX partial derivatives? \partial and \nabla
 
 % XXX Michael: Probably remove the explanations following and just state values
+% XXX: Bertrand: what is f ??
 where $0 < \rho < 1$ constitutes the decay rate. $\rho$ was set to
 $0.9$ to deemphasize the magnitude of the gradient.
 Further, $\alpha$ is the learning rate and $\epsilon$ a global damping factor.
@@ -551,7 +562,7 @@ The hyper-parameter $\alpha$ was set to $0.00001$ by prior studies and $\epsilon
 %
 Note that we have also experimented with other solvers
 (stochastic gradient descent, adadelta, and adagrad) but found that
-rmsprop converged faster and with higher generalization performance.
+\textit{rmsprop} converged faster and with higher generalization performance.
 
 \paragraph{Hints.}
 In fact, the constraint by a rest-data autoencoder qualifies as a
@@ -618,9 +629,9 @@ on a large, unseen test set (20\% of data) in the presented analyses.
 Across choices for $n$, SS-LR LogReg
 achieved more than 96\% out-of-sample accuracy, whereas
 supervised learning based on ICA and SPCA loadings
-ranged from 37,53\% to 87,28\%
+ranged from 38\% to 87\%
 and
-32,19\% to 83,97\%, respectively (Table \ref{table_one}).
+32\% to 84\%, respectively (Table \ref{table_one}).
 %
 These explorations attest to the advantage of directly searching for
 classification-relevant structure in the fMRI data,
@@ -640,7 +651,8 @@ This effect was particularly pronounced when assuming few hidden dimensions.
  \end{tabular}
  }
  \vspace{-0.2cm}
- \caption{Serial versus parallel dimensionality reduction and classification}
+ \caption{Serial versus parallel dimensionality reduction and classification
+XXX: only one decimal is meaningful}
  \label{table_one}
  \end{table}
 
@@ -680,7 +692,7 @@ logistic regression on the ensuing component loadings.
   \end{tabular}
 }
 \vspace{-0.2cm}
- \caption{Performance of SS-LR LogReg across model parameter choices}
+ \caption{Performance of SS-LR LogReg across model parameter choices. XXX: recall what the chance-level performance is.XXX: please add lambda=0}
   \label{table_two}
 \end{table}
 
@@ -699,7 +711,7 @@ results in more effective feature representations in unrelated task data.
 Third, for $n=20$ and $100$ (but not $5$) the purely rest-data-trained
 decomposition matrix ($\lambda=0$) resulted in
 noninferior out-of-dataset performance
-of X and Y, respectively (not shown in Table \ref{table_two}).
+of X and Y, respectively (not shown in Table \ref{table_two} XXX: please show it).
 This confirms that guiding model learning by task-unrelated structure
 extract features of general relevance
 beyond the supervised problem at hand.
@@ -718,7 +730,7 @@ beyond the supervised problem at hand.
 We first quantified the gain of introducing a bottleneck layer
 disregarding the autoencoder.
 To this end, ordinary logstic regression was juxtaposed
-with LR LogRed at $\lambda=1$ (no autoencoder).
+with LR LogReg  at $\lambda=1$ (no autoencoder).
 For this experiment, we increased the difficulty of the classification problem
 by including data from all 38 HCP tasks.
 Indeed, increased class separability in component space,
@@ -741,6 +753,8 @@ Autoencoder or rest data were not used for these analyses
 ($\lambda=1$).
 Hence, projecting the input data into a reduced space for classification
 yields higher class separability.
+XXX: ugly figure: use larger font for labels and titles.
+XXX: includes pdf figures, not a png file.
 }
 \label{fig_dimred}
 \end{figure}
@@ -777,7 +791,7 @@ were fit for purpose
 To this end, we computed Pearson's correlation between the classifier weights
 and the averaged neural activity map for each of the 18 tasks.
 %
-Ordinary logistic regression thus yielded a mean feature identification
+Ordinary logistic regression thus yielded a mean correlation of
 of $\rho=0.28$.
 %
 For SS-LR LogReg ($\lambda=0.25, 0.5, 0.75, 1$),
@@ -805,6 +819,7 @@ for any choice of $\lambda$.
 SS-LR LogReg therefore
 captures genuine properties of neural activity patterns,
 rather than participant- or study-specific artefacts.
+XXX: But what you show here is mostly a denoising or regularization effect.
 
 \begin{figure}
 \begin{centering}
@@ -817,6 +832,7 @@ The voxel predictors corresponding to 5 exemplary
 from the HCP dataset \cite{barch2013}.
 \textit{Left column:} ordinary logistic regression (same
 implementation but without bottleneck or autoencoder),
+XXX: sorry, but is this a multinomial or plain logistic ? Please clarify 
 \textit{middle column:} semi-supervised low-rank logistic regression
 ($n=20$ latent components, $\lambda=0.5$, $\ell_1=0.1$, $\ell_2=0.1$),
 \textit{right column:} voxel-wise average of whole-brain
@@ -846,6 +862,7 @@ Adding c) rectified linear units (ReLU) to $\mathbf{W_0}$ or
 other commonly used nonlinearities (d) sigmoid, e) softplus,
 f) hyperbolic tangent) all led to smaller classification accuracies.
 %
+\textbf{XXX: Please give explanations why this is the case. My feeling is that we're still not rich enough in the sample dimension to make these tricks worthwhile.}
 Further, g) ``pretraining'' of the bottleneck $\mathbf{W_0}$
 (i.e., non-random initialization) by 
 either corresponding SPCA or ICA loadings did not exhibit improved accuracies,
@@ -878,7 +895,7 @@ neural activity underlying defined mental operations
 can be explained by linear combinations of the main activity
 patterns. That is,
 fMRI data probably concentrate near
-a low-dimensional manifold of brain networks.
+a low-dimensional manifold that correspond to peculiar brain networks combinations.
 Extracting fundamental building blocks of brain organization might
 facilitate the quest for the cognitive primitives of
 human thought.
@@ -916,6 +933,7 @@ in psychiatric/neurological populations
 {\small
 Data were provided by the Human Connectome Project. The study was supported
 by the German National Academic Foundation (D.B.).
+XXX: Note that this will be removed at submission for the sake of anonymization.
 }
 
 \small
