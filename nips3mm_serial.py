@@ -73,6 +73,157 @@ del X_task
 # class defintion
 ##############################################################################
 
+class AutoEncoder(BaseEstimator):
+    def __init__(self, n_hidden, gain1, learning_rate, max_epochs=500):
+        self.n_hidden = n_hidden
+        self.gain1 = gain1
+        self.max_epochs = max_epochs
+        self.learning_rate = np.float32(learning_rate)
+
+    # def rectify(X):
+    #     return T.maximum(0., X)
+
+    from theano.tensor.shared_randomstreams import RandomStreams
+
+    def RMSprop(self, cost, params, lr=0.001, rho=0.9, epsilon=1e-6):
+        grads = T.grad(cost=cost, wrt=params)
+        updates = []
+        for p, g in zip(params, grads):
+            acc = theano.shared(p.get_value() * 0.)
+            acc_new = rho * acc + (1 - rho) * g ** 2
+            gradient_scaling = T.sqrt(acc_new + epsilon)
+            g = g / gradient_scaling
+            updates.append((acc, acc_new))
+            updates.append((p, p - lr * g))
+        return updates
+        
+    def get_param_pool(self):
+        cur_params = (
+            self.W0s, self.W1s, self.bW0s, self.bW1s
+        )
+        return cur_params
+        
+
+    def fit(self, X_rest):
+        DEBUG_FLAG = True
+
+        # self.max_epochs = 333
+        self.batch_size = 100
+        n_input = X_rest.shape[1]  # sklearn-like structure
+        n_output = n_input
+        rng = np.random.RandomState(42)
+        self.params_from_last_iters = []
+        
+        self.input_restdata = T.matrix(dtype='float32', name='input_restdata')
+
+        index = T.iscalar(name='index')
+        
+        # prepare data for theano computation
+        if DEBUG_FLAG:
+            self.dbg_ae_cost_ = list()
+            self.dbg_ae_nonimprovesteps = list()
+        X_rest_s = theano.shared(value=np.float32(X_rest), name='X_rest_s')
+        ae_train_samples = len(X_rest)
+
+        # W -> unsupervised / auto-encoder
+
+        # computational graph: auto-encoder
+        W0_vals = rng.randn(n_input, self.n_hidden).astype(np.float32) * self.gain1
+
+        self.W0s = theano.shared(W0_vals)
+        self.W1s = self.W0s.T  # tied
+        bW0_vals = np.zeros(self.n_hidden).astype(np.float32)
+        self.bW0s = theano.shared(value=bW0_vals, name='bW0')
+        bW1_vals = np.zeros(n_output).astype(np.float32)
+        self.bW1s = theano.shared(value=bW1_vals, name='bW1')
+
+        givens_ae = {
+            self.input_restdata: X_rest_s[
+                index * self.batch_size:(index + 1) * self.batch_size]
+        }
+
+        encoding = (self.input_restdata.dot(self.W0s) + self.bW0s).dot(self.W1s) + self.bW1s
+
+        self.ae_loss = T.sum((self.input_restdata - encoding) ** 2, axis=1)
+
+        self.ae_cost = (
+            T.mean(self.ae_loss) / n_input
+        )
+
+        # combined loss for AE and LR
+        ae_params = [self.W0s, self.bW0s, self.bW1s]
+        ae_updates = self.RMSprop(
+            cost=self.ae_cost,
+            params=ae_params,
+            lr=self.learning_rate)
+        f_train_ae = theano.function(
+            [index],
+            [self.ae_cost],
+            givens=givens_ae,
+            updates=ae_updates, allow_input_downcast=True)
+
+        # optimization loop
+        start_time = time.time()
+        ae_last_cost = np.inf
+        no_improve_steps = 0
+        acc_train, acc_val = 0., 0.
+        for i_epoch in range(self.max_epochs):
+            if i_epoch == 1:
+                epoch_dur = time.time() - start_time
+                total_mins = (epoch_dur * self.max_epochs) / 60
+                hs, mins = divmod(total_mins, 60)
+                print("Max estimated duration: %i hours and %i minutes" % (hs, mins))
+
+            # AE
+            # if i_epoch % 2 == 0:  # every second time
+            #if False:
+                # auto-encoder
+            ae_n_batches = ae_train_samples // self.batch_size
+            # for i in range(lr_n_batches):
+            # for i in range(max(ae_n_batches, lr_n_batches)):
+                # if i < ae_n_batches:
+                #     ae_cur_cost = float(f_train_ae(i)[0])
+                # ae_cur_cost = 0
+                # if i < lr_n_batches:
+                #     lr_cur_cost = float(f_train_lr(i)[0])
+            # for i in range(lr_n_batches):
+            for i in range(ae_n_batches):
+                # lr_cur_cost = f_train_lr(i)[0]
+                # ae_cur_cost = lr_cur_cost
+                ae_cur_cost = f_train_ae(i)[0]
+
+            # evaluate epoch cost
+            if ae_last_cost - ae_cur_cost < 0.1:
+                no_improve_steps += 1
+            else:
+                ae_last_cost = ae_cur_cost
+                no_improve_steps = 0
+
+            print('E:%i, ae_cost:%.4f, adsteps:%i' % (
+                i_epoch + 1, ae_cur_cost, no_improve_steps))
+
+            if (i_epoch % 10 == 0):
+                self.dbg_ae_cost_.append(ae_cur_cost)
+                self.dbg_ae_nonimprovesteps.append(no_improve_steps)
+
+            # save paramters from last 100 iterations
+            if i_epoch > -1: # (self.max_epochs - 100):
+                print('Param pool!')
+                param_pool = self.get_param_pool()
+                self.params_from_last_iters.append(param_pool)
+
+        total_mins = (time.time() - start_time) / 60
+        hs, mins = divmod(total_mins, 60)
+        print("Final duration: %i hours and %i minutes" % (hs, mins))
+
+        return self
+
+    def transform(self, newdata):
+        compr_matrix = self.W0s.get_value().T  # currently best compression
+        transformed_data = np.dot(compr_matrix, newdata.T).T
+        return transformed_data
+
+
 class SEncoder(BaseEstimator):
     def __init__(self, gain1, learning_rate, max_epochs=100,
                  l1=0.1, l2=0.1):
@@ -277,12 +428,12 @@ class SEncoder(BaseEstimator):
 # data processing
 ##############################################################################
 
-n_comps = [5, 10, 20, 50, 100]
+n_comps = [5, 20, 50, 100]
 for n_comp in n_comps:
     print('#' * 80)
     print('#components: %i' % n_comp)
     
-    # 1st-step approach: ICA
+    # 2-step approach 1: ICA + LR
     # print('Compressing...')
     # from sklearn.decomposition import FastICA
     # compressor = FastICA(n_components=n_comp, whiten=True)
@@ -311,12 +462,45 @@ for n_comp in n_comps:
     # np.save(outpath + '_acc', acc_ICA)
     # joblib.dump(estimator, outpath + '_est', compress=9)
 
-    # 2nd-step approach: ICA
-    print('Compressing...')
-    from sklearn.decomposition import SparsePCA
-    compressor = SparsePCA(n_components=n_comp, alpha=1.0,  # big sparsity
-                           n_jobs=1, verbose=0, tol=0.1)
+    # 2-step approach: SPCA + LR
+    # print('Compressing...')
+    # from sklearn.decomposition import SparsePCA
+    # compressor = SparsePCA(n_components=n_comp, alpha=1.0,  # big sparsity
+    #                        n_jobs=1, verbose=0, tol=0.1)
+    # compressor.fit(X_dev)
+    # half2compr = compressor.transform(X_val)
+    # 
+    # print('Classifiying...')
+    # l1 = 0.1
+    # l2 = 0.1
+    # my_title = r'LR: L1=%.1f L2=%.1f res=3mm' % (
+    #     l1, l2
+    # )
+    # print(my_title)
+    # estimator = SEncoder(
+    #     gain1=0.004,  # empirically determined by CV
+    #     learning_rate = np.float32(0.00001),  # empirically determined by CV,
+    #     max_epochs=500, l1=l1, l2=l2)
+    # 
+    # estimator.fit(half2compr, y_val)
+    # 
+    # acc_SPCA = estimator.dbg_acc_val_
+    # print(acc_SPCA)
+    # print('SPCA: %.4f' % acc_SPCA[-1])
+    # 
+    # outpath = op.join(WRITE_DIR, 'SPCA-LR_ncomp=%i' % n_comp)
+    # np.save(outpath + '_acc', acc_SPCA)
+    # joblib.dump(estimator, outpath + '_est', compress=9)
+
+    # 2-step approach 3: AE + LR
+    print('Compressing by autoencoder...')
+    compressor = AutoEncoder(
+            n_hidden=n_comp,
+            gain1=0.004,  # empirically determined by CV
+            learning_rate = np.float32(0.00001),  # empirically determined by CV,
+            max_epochs=500)
     compressor.fit(X_dev)
+    
     half2compr = compressor.transform(X_val)
     
     print('Classifiying...')
@@ -333,11 +517,13 @@ for n_comp in n_comps:
 
     estimator.fit(half2compr, y_val)
 
-    acc_SPCA = estimator.dbg_acc_val_
-    print(acc_SPCA)
-    print('SPCA: %.4f' % acc_SPCA[-1])
+    acc_AE = estimator.dbg_acc_val_
+    print(acc_AE)
+    print('AE: %.4f' % acc_AE[-1])
 
-    outpath = op.join(WRITE_DIR, 'SPCA-LR_ncomp=%i' % n_comp)
-    np.save(outpath + '_acc', acc_SPCA)
+    outpath = op.join(WRITE_DIR, 'AE-LR_ncomp=%i' % n_comp)
+    np.save(outpath + '_acc', acc_AE)
     joblib.dump(estimator, outpath + '_est', compress=9)
+
+    stop
 

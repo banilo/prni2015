@@ -41,8 +41,8 @@ if not op.exists(WRITE_DIR):
     os.mkdir(WRITE_DIR)
 
 MAX_SAMPLES = 2000
-MAX_REST_SAMPLES = 1
-MAX_TASK_SAMPLES = 1000
+MAX_REST_SAMPLES = 750
+MAX_TASK_SAMPLES = 100
 
 ##############################################################################
 # load+preprocess data
@@ -466,7 +466,7 @@ n_comps = [20]
 for n_comp in n_comps:
     # for lambda_param in [0]:
     #for lambda_param in [0.5]:
-    for lambda_param in [1.0]:
+    for lambda_param in [0.5]:
         l1 = 0.1
         l2 = 0.1
         my_title = r'Low-rank LR + AE (combined loss, shared decomp): n_comp=%i L1=%.1f L2=%.1f lambda=%.2f res=3mm spca20RS max%i r%i t%i' % (
@@ -514,7 +514,6 @@ STOP_CALCULATION
 # equally scaled plots
 import re
 pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
-dbg_epochs_ = np.load(pkgs[0])
 dbg_epochs_ = np.load(pkgs[0])
 
 d = {
@@ -587,10 +586,10 @@ for n_comp in n_comps:  #
         # n_hidden = int(re.search('comp=(?P<comp>.{1,2,3})_', p).group('comp'))
         n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
         max_samples = int(re.search('max(.{1,4})_', p).group(1))
-        rest_samples = int(re.search('_r(.{2,4})_', p).group(1))
+        rest_samples = int(re.search('_r(.{1,4})_', p).group(1))
         task_samples = int(re.search('_t(.{2,4})dbg', p).group(1))
         
-        if (task_samples != 1000):
+        if (task_samples != 100):
             continue
         
         if n_comp != n_hidden:
