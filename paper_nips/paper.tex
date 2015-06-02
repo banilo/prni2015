@@ -64,7 +64,7 @@ high-dimensional neuroimaging data}
 
 \author{Danilo Bzdok, Michael Eickenberg, Olivier Grisel,
   Bertrand Thirion,
-  Ga\"el Varoquaux \\\\\textbf{\textit{email:} }firstname.lastname@inria.fr}
+  Ga\"el Varoquaux \\\textbf{\textit{email:} }firstname.lastname@inria.fr}
 
 \maketitle
 
@@ -75,7 +75,9 @@ biology in ever-increasing datasets.
 Existing neuroimaging methods typically perform either discovery of unknown
 neural structure or testing of neural structure associated with mental tasks.
 %
-However, testing hypotheses on the neural correlates of an increasing number of mental tasks makes it crucial to represent the observations adequately.
+However, testing hypotheses on the neural correlates of an
+increasing number of mental tasks makes it crucial to
+represent the observations adequately.
 %
 We therefore propose to optimize
 representation and task classification in
@@ -85,12 +87,14 @@ A multinomial logistic regression is introduced that is
 constrained by joint rank with a representation-enforcing
 autoencoder.
 %
-We show that this approach yields more accurate and more interpretable
-neural models of psychological tasks in a reference dataset, and better generalization to other datasets.
+We show that this approach yields more accurate and interpretable
+neural models of psychological tasks in a reference dataset,
+as well as better generalization to other datasets.
 %
 
-\textbf{keywords}: dimensionality reduction; semi-supervised learning;
-fMRI; systems neuroscience
+% Danilo: NIPS does actually not seem to have keywords
+%\textbf{\\keywords}: curse of dimensionality; semi-supervised learning;
+%fMRI; systems neuroscience
 
 \end{abstract}
 
@@ -220,12 +224,7 @@ sparse coding are mathematically equivalent
 under mild conditions.
 %
 Hence, autoencoders can flexibly project the neuroimaging data
-onto the main axes of variation and thus % XXX Michael <- that's PCA
-reverse-engineer properties of the data-generating
-processes in the brain \cite{olshausen96}.
-% XXX Michael ^ I don't get that last part nor the citation.
-\textbf{XXX Bertrand: neither do I. I think you exxagerate.}
-% Danilo: that is the magic
+onto the main directions of variation.
 
 In the present investigation,
 a linear autoencoder will be fit to
@@ -235,8 +234,8 @@ into a multinomial
 logistic regression fit to
 (labeled) task data.
 We can then solve the unsupervised data representation and the
-supervised classification in an identical statistical learning
-problem.
+supervised classification, previously studied in isolation,
+in an identical statistical learning problem.
 %
 From the perspective of dictionary learning, the first layer represents
 % XXX Michael: This is the crucial difference: The first layer is an analysis
@@ -265,17 +264,16 @@ resting-state autoencoders that
 favor the most neurobiologically
 valid models in the hypothesis set.
 %
-In summary,
-the important modes of variation in brain dynamics and
-the neural correlates subserving mental operations
-have mostly been studied in isolation.
-We provide a principled computational framework to link these previously
-unconnected domains of systems neuroscience.
-
-\textbf{XXX Bertrand: I think that you could emphasize the problem that we are always data-poor, so that the set of representations that  can be extracted from SPMs taken from  a few tens of subjects is limited. What you propose it to extend it by i) co-analysing many problems simultaneously (multi-task) and using unlabled data that spana space of meaningful configurations
-}
-\textbf{XXX Bertrand: We need a sentence like: Our contribution is 1. XXX 2.YYY etc.}
-
+Practically, neuroimaging research is frequently suffering from
+data scarcity. This limits the set of representations that can be
+extracted from GLM analyses based on few participants.
+%
+We therefore contribute a computational framework that
+1.) co-analyzes many problems simultaneously
+(thus find shared representations by multi-task learning)
+and
+2.) exploits unlabeled data
+(that span a space of meaningful configurations).
 
 \section{Methods}
 %
@@ -371,9 +369,6 @@ from 18 diverse tasks acquired in 78 participants.
 
 The labeled and unlabeled data were fed into a linear statistical model
 composed of an autoencoder and low-rank logistic regression.
-
-
-XXX (Bertrand): You can simplify data description if needed for the sake of place. It's OK as long as you can refer to a more complete publication describing the data.
 
 \paragraph{Linear autoencoder.}
 The affine autoencoder takes the input 
@@ -522,11 +517,6 @@ redundancy in $X_{rest}$ and $X_{task}$.
 The matrix parameters were initalized by Gaussian random values multiplied
 by a gain of $0.004$. 
 %
-
-XXX: Sorry, I don't like magic numbers. Please explain where this comes from
- ? Maybe $\sqrt{1 / p}$ ?
-
-%
 The bias parameters were initalized to zero.
 With a slight abuse of notation, let $\theta$ denote a component of $\theta$.
 The normalization factor and the update rule for $\theta$
@@ -544,7 +534,7 @@ are given by
 
 \begin{eqnarray}
   \begin{split}
-    \mathbf{v^{(t+1)}} &= \rho \mathbf{v^{(t+1)}} + (1 - \rho)\left(\frac{\partial f}{\partial \theta}\right)^2
+    \mathbf{v^{(t+1)}} &= \rho \mathbf{v^{(t+1)}} + (1 - \rho)\left(\frac{\partial \mathcal{L}}{\partial \theta}\right)^2
 %v^{(t+1)} = \rho v^{(t+1)} + (1 - \rho)˜|\nabla f
 \\
 \theta^{(t+1)} &= \theta^{(t)} + \alpha \frac{\nabla f(\theta^{(t)})}{\sqrt{\mathbf{v^{(t+1)}} + \epsilon}},
@@ -554,7 +544,8 @@ are given by
 % XXX partial derivatives? \partial and \nabla
 
 % XXX Michael: Probably remove the explanations following and just state values
-% XXX: Bertrand: what is f ??
+\textbf{XXX: Bertrand: what is f ?? Danilo: replaced f by loss L}
+
 where $0 < \rho < 1$ constitutes the decay rate. $\rho$ was set to
 $0.9$ to deemphasize the magnitude of the gradient.
 Further, $\alpha$ is the learning rate and $\epsilon$ a global damping factor.
@@ -580,7 +571,7 @@ is compatible with the expected representation of BOLD activity signals.
 \paragraph{Implementation.}
 The analyses were performed in Python.
 We used \textit{nilearn} to handle
-the high-dimensional neuroimaging data 
+the large quantities of neuroimaging data 
 \cite{abrah14}
 and
 \textit{Theano} for automatic, numerically stable
@@ -644,15 +635,16 @@ This effect was particularly pronounced when assuming few hidden dimensions.
  \begin{tabular}{lccc}
  \hline
  \textit{n}               & ICA + LogReg & SPCA + LogReg & SS-LR LogReg \\ \hline
- \multicolumn{1}{l|}{5}   & 37,53 \%     & 32,19 \%      & 96,50 \%     \\
- \multicolumn{1}{l|}{20}  & 80,98 \%     & 78,15 \%      & 97,33 \%     \\
- \multicolumn{1}{l|}{50}  & 84,19 \%     & 83,97 \%      & 97,69 \%     \\
- \multicolumn{1}{l|}{100} & 87,28 \%     & 82,19 \%      & 97,80 \%     \\ \hline
+ \multicolumn{1}{l|}{5}   & 37,5 \%     & 32,2 \%      & 96,5 \%     \\
+ \multicolumn{1}{l|}{20}  & 81,0 \%     & 78,2 \%      & 97,3 \%     \\
+ \multicolumn{1}{l|}{50}  & 84,2 \%     & 84,0 \%      & 97,7 \%     \\
+ \multicolumn{1}{l|}{100} & 87,3 \%     & 82,2 \%      & 97,8 \%     \\ \hline
  \end{tabular}
  }
  \vspace{-0.2cm}
- \caption{Serial versus parallel dimensionality reduction and classification
-XXX: only one decimal is meaningful}
+ \caption{\textbf{Serial versus parallel dimensionality reduction and classification.}
+ Chance is at 5,6\%.
+ }
  \label{table_one}
  \end{table}
 
@@ -660,7 +652,7 @@ XXX: only one decimal is meaningful}
 SS-LR LogReg was subsequently trained ($500$ epochs) across parameter choices
 for the hidden components ($n=5, 20, 100$) and
 the balance between autoencoder and logistic regression
-($\lambda=0.25, 0.5, 0.75, 1$).
+($\lambda=0, 0.25, 0.5, 0.75, 1$).
 Assuming 5 latent directions of variation should yield models with
 higher bias and smaller variance then SS-LR LogReg with 100 latent directions.
 %
@@ -680,19 +672,22 @@ logistic regression on the ensuing component loadings.
 \begin{table}[h]
   \centering
   \resizebox{1.00\textwidth}{!}{%
-\begin{tabular}{l|cccc|cccc|cccc|cccc|}
+\tabcolsep=0.05cm
+\begin{tabular}{l|ccccc|ccccc|ccccc|}
   \hline
-                            & \multicolumn{4}{c|}{\textit{n = 5}}                                                                                                            & \multicolumn{4}{c|}{\textit{n = 20}}                                                                                                                   & \multicolumn{4}{c}{\textit{n = 100}}                                                       \\ \hline
-  \textit{}                 & \multicolumn{1}{l}{$\lambda=0.25$} & \multicolumn{1}{l}{$\lambda=0.5$} & \multicolumn{1}{l}{$\lambda=0.75$} & \multicolumn{1}{l|}{$\lambda=1$} & \multicolumn{1}{l}{$\lambda=0.25$}   & \multicolumn{1}{l}{$\lambda=0.5$}   & \multicolumn{1}{l}{$\lambda=0.75$}   & \multicolumn{1}{l|}{$\lambda=1$}   & $\lambda=0.25$   & $\lambda=0.5$    & $\lambda=0.75$   & \multicolumn{1}{l}{$\lambda=1$}    \\ \hline
-  Out-of-sample\\accuracy   & \textit{88,90\%}                   & 95,13\%                            & \textbf{96,49\%}                  & 95,72\%                          & 97,44\%                              & \textbf{97,80\%}                    & 97,33\%                              & \textit{97,32\%}                   & 97,21\%          & \textit{97,03\%} & \textbf{97,80\%} & 97,38\%                            \\
-  Precision (mean)          & \textit{86,98\%}                   & 94,86\%                            & \textbf{96,28\%}                  & 95,36\%                          & \textbf{97,38\%}                     & 97,06\%                             & \textit{96,98\%}                     & 97,02\%                            & 96,90\%          & \textit{96,47\%} & \textbf{97,50\%} & 96,91\%                            \\
-  Recall (mean)             & \textit{88,27\%}                   & 95,19\%                            & \textbf{96,57\%}                  & 95,70\%                          & \textbf{97,51\%}                     & 97,50\%                             & \textit{97,35\%}                     & 97,36\%                            & 97,20\%          & \textit{97,15\%} & \textbf{97,88\%} & 97,37\%                            \\
-  F1 score (mean)           & \textit{86,64\%}                   & 94,89\%                            & \textbf{96,38\%}                  & 95,43\%                          & \textbf{97,42\%}                     & 97,22\%                             & \textit{97,11\%}                     & 97,13\%                            & 97,00\%          & \textit{96,71\%} & \textbf{97,65\%} & 97,07\%                            \\ \hline
-  Out-of-dataset \\accuracy & 60,83\%                            & \textit{54,30\%}                   & 60,69\%                           & \textbf{62,92\%}                 & 79,72\%                              & \textbf{81,94\%} & 79,72\%          & \textit{79,44\%}                     & \textbf{82,08\%} & 81,66\%         & 81,25\%          & \textit{75,83\%}                   \\ \hline
+                            & \multicolumn{5}{c|}{\textit{n = 5}}                                                                                                                                                 & \multicolumn{5}{c|}{\textit{n = 20}}                                                                                                                                                      & \multicolumn{5}{c}{\textit{n = 100}}                                                                           \\ \hline
+  \textit{}                 & \multicolumn{1}{l}{$\lambda=0$}    & \multicolumn{1}{l}{$\lambda=0.25$} & \multicolumn{1}{l}{$\lambda=0.5$} & \multicolumn{1}{l}{$\lambda=0.75$} & \multicolumn{1}{l|}{$\lambda=1$} & \multicolumn{1}{l}{$\lambda=0$}  & \multicolumn{1}{l}{$\lambda=0.25$}   & \multicolumn{1}{l}{$\lambda=0.5$}   & \multicolumn{1}{l}{$\lambda=0.75$}   & \multicolumn{1}{l|}{$\lambda=1$}   & $\lambda=0$      & $\lambda=0.25$   & $\lambda=0.5$    & $\lambda=0.75$   & \multicolumn{1}{l}{$\lambda=1$}    \\ \hline
+  Out-of-sample\\accuracy   & \textit{6,0\%}                     & 88,9\%                             & 95,1\%                            & \textbf{96,5\%}                    & 95,7\%                           & \textit{5,5\%}                   & 97,4\%                               & \textbf{97,8\%}                     & 97,3\%                               & 97,3\%                             & \textit{6,1\%}   & 97,2\%           & 97,0\%           & \textbf{97,8\%}  & 97,4\%                             \\
+  Precision (mean)          & \textit{5,9\%}                     & 87,0\%                             & 94,9\%                            & \textbf{96,3\%}                    & 95,4\%                           & \textit{5,1\%}                   & \textbf{97,4\%}                      & 97,1\%                              & 97,0\%                               & 97,0\%                             & \textit{5,9\%}   & 96,9\%           & 96,5\%           & \textbf{97,5\%}  & 96,9\%                             \\
+  Recall (mean)             & \textit{5,6\%}                     & 88,3\%                             & 95,2\%                            & \textbf{96,6\%}                    & 95,7\%                           & \textit{4,6\%}                   & \textbf{97,5\%}                      & 97,5\%                              & 97,4\%                               & 97,4\%                             & \textit{7,2\%}   & 97,2\%           & 97,2\%           & \textbf{97,9\%}  & 97,4\%                             \\
+  F1 score (mean)           & \textit{4,1\%}                     & 86,6\%                             & 94,9\%                            & \textbf{96,4\%}                    & 95,4\%                           & \textit{3,8\%}                   & \textbf{97,4\%}                      & 97,2\%                              & 97,1\%                               & 97,1\%                             & \textit{5,3\%}   & 97,0\%           & 96,7\%           & \textbf{97,7\%}  & 97,2\%                             \\ \hline
+  Out-of-study\\accuracy    & \textit{39,4\%}                    & 60,8\%                             & 54,3\%                            & 60,7\%                             & \textbf{62,9\%}                  & \textit{77,0\%}                  & 79,7\%                               & \textbf{81,9\%}                     & 79,7\%                               & 79,4\%                             & 79,2\%           & \textbf{82,2\%}  & 81,7\%           & 81,3\%           & \textit{75,8\%}                    \\ \hline
   \end{tabular}
 }
 \vspace{-0.2cm}
- \caption{Performance of SS-LR LogReg across model parameter choices. XXX: recall what the chance-level performance is.XXX: please add lambda=0}
+ \caption{\textbf{Performance of SS-LR LogReg across model parameter choices.}
+ Chance is at 5,6\%.
+ }
   \label{table_two}
 \end{table}
 
@@ -704,16 +699,17 @@ Classification by low-rank logistic regression is therefore facilitated by
 imposing structure from the unlabeled rest data.
 %
 Second, the higher the number of latent components $n$,
-the higher the out-of-dataset performance with small choices for $\lambda$.
+the higher the out-of-study performance with small choices for $\lambda$.
 This suggests that the presence of more rest-data-inspired hidden components
 results in more effective feature representations in unrelated task data.
 %
 Third, for $n=20$ and $100$ (but not $5$) the purely rest-data-trained
 decomposition matrix ($\lambda=0$) resulted in
-noninferior out-of-dataset performance
-of X and Y, respectively (not shown in Table \ref{table_two} XXX: please show it).
+noninferior out-of-study performance
+of 77,0\% and 79,2\%,
+respectively (Table \ref{table_two}).
 This confirms that guiding model learning by task-unrelated structure
-extract features of general relevance
+extracts features of general relevance
 beyond the supervised problem at hand.
 
 % Depicts f1 scores for prediction of each of 38 classes across training epochs.
@@ -753,6 +749,7 @@ Autoencoder or rest data were not used for these analyses
 ($\lambda=1$).
 Hence, projecting the input data into a reduced space for classification
 yields higher class separability.
+Chance is at 2,6\%.
 XXX: ugly figure: use larger font for labels and titles.
 XXX: includes pdf figures, not a png file.
 }
@@ -779,6 +776,7 @@ the repertoire of rest structure modulated model performance
 Gradient descent was performed on 2000 task and 2000 rest images.
 These were drawn with replacement from identical versus varying
 quantities of task versus rest maps, at the begining of each epoch.
+Chance is at 5,6\%.
 }
 \label{fig_semisup}
 \end{figure}
@@ -931,9 +929,8 @@ in psychiatric/neurological populations
 
 \paragraph{Acknowledgment}
 {\small
-Data were provided by the Human Connectome Project. The study was supported
-by the German National Academic Foundation (D.B.).
-XXX: Note that this will be removed at submission for the sake of anonymization.
+Data were provided by the Human Connectome Project.
+% The study was supported by the German National Academic Foundation (D.B.).
 }
 
 \small
