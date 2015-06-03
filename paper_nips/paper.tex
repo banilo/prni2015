@@ -29,7 +29,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\title{Semi-supervised low-rank logistic regression for
+\title{Semi-supervised factored logistic regression for
 high-dimensional neuroimaging data}
 
 \newcommand{\fix}{\marginpar{FIX}}
@@ -75,12 +75,12 @@ biology in ever-increasing datasets.
 Existing neuroimaging methods typically perform either discovery of unknown
 neural structure or testing of neural structure associated with mental tasks.
 %
-However, testing hypotheses on the neural correlates of an
-increasing number of mental tasks makes it crucial to
-represent the observations adequately.
+However, testing hypotheses on the neural correlates of
+larger mental task sets
+necessitates adequate representation of the observations.
 %
 We therefore propose to optimize
-representation and task classification in
+representation modelling and task classification in
 a unified statistical learning problem.
 %
 A multinomial logistic regression is introduced that is
@@ -103,7 +103,8 @@ as well as better generalization to other datasets.
 Methods for neuroimaging research can be grouped by discovering
 neurobiological structure or assessing the neural correlates associated
 with mental tasks.
-To discover, on the one hand, spatial distributions of neural activity
+To \textit{discover}, on the one hand,
+spatial distributions of neural activity
 structure across time,
 independent component analysis (ICA) \cite{beckmann2005} is often used.
 It decomposes the BOLD (blood-oxygen level-dependent) signals into the
@@ -128,7 +129,7 @@ is known
 not to correlate with a particular behavior, stimulus, or experimental task
 \cite{fox07}. 
 
-To test, on the other hand,
+To \textit{test}, on the other hand,
 the neural correlates underlying mental tasks,
 the general linear model (GLM) is the dominant approach \cite{friston94}.
 The contribution of
@@ -159,11 +160,11 @@ the manifold of brain states
 due to the high task-rest similarities of neural activity patterns,
 as observed using ICA \cite{smith2009}.
 
-Both these biological properties can be conjointly exploited in an
+Both these neurobiological properties can be conjointly exploited in an
 approach that is
-mixed (i.e., using task and rest data)
+mixed (i.e., using rest and task data)
 and 
-low-rank (i.e., performing network decomposition).
+factored (i.e., performing network decomposition).
 %
 The integration of brain-network discovery into
 supervised classification can yield a semi-supervised learning
@@ -179,7 +180,7 @@ including PCA, SPCA, and ICA \cite{hinton06}.
   %\captionsetup{labelformat=nonumber}
     \includegraphics[width=0.40\textwidth]{figures/figure1.png}
   \vspace{-0.7cm}
-  \caption {\textbf{Architecture.}
+  \caption {\textbf{Model architecture.}
   Linear autoencoders find an optimal compression of 79,941 brain voxels
   into $n$ unknown activity patterns by improving reconstruction from them.
   The decomposition matrix equates with the bottleneck of
@@ -190,7 +191,7 @@ including PCA, SPCA, and ICA \cite{hinton06}.
   }
 \end{wrapfigure}
 %
-Autoencoders
+Autoencoders (AE)
 are often one-layered learning models 
 that condense the input data to
 local and global 
@@ -208,8 +209,8 @@ by optimizing reconstruction from them.
 They behave like a (truncated, non-centered) PCA
 in case of one linear hidden layer and a squared error loss
 \cite{baldi1989neural}.
-This architecture yields an optimization objective
-with unique global minimum.
+% This architecture yields an optimization objective
+% with unique global minimum.
 Autoencoders behave like a SPCA if shrinkage terms are added to the
 model weights in the optimization objective.
 Moreover, they have the characteristics of an ICA in case of tied weights
@@ -223,7 +224,7 @@ These authors further demonstrated that ICA, sparse autoencoders, and
 sparse coding are mathematically equivalent
 under mild conditions.
 %
-Hence, autoencoders can flexibly project the neuroimaging data
+Thus, autoencoders can flexibly project the neuroimaging data
 onto the main directions of variation.
 
 In the present investigation,
@@ -269,10 +270,10 @@ data scarcity. This limits the set of representations that can be
 extracted from GLM analyses based on few participants.
 %
 We therefore contribute a computational framework that
-1.) co-analyzes many problems simultaneously
-(thus find shared representations by multi-task learning)
+1) co-analyzes many problems simultaneously
+(thus find shared representations by ``multi-task learning'')
 and
-2.) exploits unlabeled data
+2) exploits unlabeled data
 (that span a space of meaningful configurations).
 
 \section{Methods}
@@ -321,7 +322,8 @@ The supservised analyses were based on labeled HCP task maps with
 79,941 voxels of interest representing z-values in gray matter.
 
 These labeled data were complemented by unlabeled activity maps
-from HCP acquisitions of unconstrained resting-state activity.
+from HCP acquisitions of unconstrained resting-state activity
+\cite{smith2013resting}.
 These reflect brain activity in the absence of controlled thought.
 In line with the goal of the present study, acquisition of these data was
 specifically aimed at the study of task-rest correspondence.
@@ -342,7 +344,8 @@ In sum, the HCP rest data concatenated
 8000 unlabeled, noise-cleaned rest maps with
 40 brain images from each of 200 randomly selected participants.
 
-We were further interested in the utility of the optimal low-rank projection
+We were further interested in the utility of the
+optimized low-rank projection
 in one task dataset for dimensionality reduction in another task dataset.
 To this end, the HCP-derived network decompositions were used as preliminary
 step in the classifcation problem of another large sample.
@@ -368,7 +371,7 @@ labeled, grey-matter masked, and z-scored activity maps
 from 18 diverse tasks acquired in 78 participants.
 
 The labeled and unlabeled data were fed into a linear statistical model
-composed of an autoencoder and low-rank logistic regression.
+composed of an autoencoder and factored logistic regression.
 
 \paragraph{Linear autoencoder.}
 The affine autoencoder takes the input 
@@ -430,9 +433,9 @@ layer interpretable and pulls all non-zero singular values towards 1.
 Nonlinearities were not applied to the
 activations in the first layer.
 
-\paragraph{Reduced-rank logistic regression.}
+\paragraph{Factored logistic regression.}
 Lossy compression by a low-dimensional bottleneck
-is also imposed by the first layer of the low-rank
+is also imposed by the first layer of the factored
 multinomial logistic regression.
 It gives the probability of an input $\mathbf{x}$ to belong
 to a class $i \in \{1, \dots, l\}$
@@ -463,7 +466,7 @@ The loss function is given by
 
 \paragraph{Layer combination.}
 Importantly, the optimization problem of the linear autoencoder
-and the low-rank logistic regression
+and the factored logistic regression
 are linked on two levels. First, their transformation matrices mapping from
 input to the latent space are tied
 \begin{eqnarray}
@@ -472,7 +475,7 @@ input to the latent space are tied
 We thus search for a compression of the 79,941 voxel values into $n$ latent
 components that represent an optimal latent code for both
 rest and task activity data.
-Second, the objectives of the autoencoder and the low-rank
+Second, the objectives of the autoencoder and the factored
 logistic regression are interpolated in the common loss function
 
 % XXX Michael: In resolving conflict I opted for my change. Feel free to revert if that was intended.
@@ -502,7 +505,7 @@ The common objective was optimized
 in the neuroimaging data
 by gradient descent in the parameters
 of the 
-semi-supervised low-rank logistic regression (SS-LR LogReg).
+semi-supervised factored logistic regression (SS-F LogReg).
 The required gradients are easily obtained by using the chain rule to
 backpropagate error derivatives through the linear network.
 As solver, we chose \textit{rmsprop} \cite{rmsprop}.
@@ -534,17 +537,17 @@ are given by
 
 \begin{eqnarray}
   \begin{split}
-    \mathbf{v^{(t+1)}} &= \rho \mathbf{v^{(t+1)}} + (1 - \rho)\left(\frac{\partial \mathcal{L}}{\partial \theta}\right)^2
+    \mathbf{v^{(t+1)}} &= \rho \mathbf{v^{(t+1)}} + (1 - \rho)\left(\nabla_{\theta} f(x^{(t)}, y^{(t)}, \theta^{(t)})\right)^2
 %v^{(t+1)} = \rho v^{(t+1)} + (1 - \rho)˜|\nabla f
 \\
-\theta^{(t+1)} &= \theta^{(t)} + \alpha \frac{\nabla f(\theta^{(t)})}{\sqrt{\mathbf{v^{(t+1)}} + \epsilon}},
+\theta^{(t+1)} &= \theta^{(t)} + \alpha \frac{\nabla_{\theta} f(x^{(t)}, y^{(t)}, \theta^{(t)})}{\sqrt{\mathbf{v^{(t+1)}} + \epsilon}},
   \end{split}
 \end{eqnarray}
 % XXX Michael: Why, in the formula, do we have two different notations for
 % XXX partial derivatives? \partial and \nabla
 
 % XXX Michael: Probably remove the explanations following and just state values
-\textbf{XXX: Bertrand: what is f ?? Danilo: replaced f by loss L}
+% XXX: Bertrand: what is f ?? Danilo: replaced f by more detailed notation
 
 where $0 < \rho < 1$ constitutes the decay rate. $\rho$ was set to
 $0.9$ to deemphasize the magnitude of the gradient.
@@ -588,57 +591,66 @@ We first tested for an advantage of combined unsupervised decomposition
 and supervised classification learning.
 We benchmarked against
 performing data reduction on the (unlabeled)
-first half of the HCP data by ICA and SPCA ($n=5, 20, 50, 100$ components)
+first half of the HCP task data by PCA, SPCA, ICA, and
+AE ($n=5, 20, 50, 100$ components)
 and learning classification models in the (labeled) second half
 by ordinary logistic regression.
 %
-ICA performed iterative blind source separation
-by a parallel FASTICA implementation (200 maximum iterations,
-per-iteration tolerance of 0.0001,
-initialized by random mixing matrix, whitening).
+PCA reduced the dimensionality of the task data by
+finding orthogonal network components using a change of basis
+(whitening).
+%
 SPCA separated the BOLD signals into
 network components with few regions by
 a regression-type optimization problem constrained by
 $\ell_1$-penalty
 (no orthogonality assumptions, 1000 maximum iterations,
-per-iteration tolerance of 1 * 10\textsuperscript{-8}, sparsity
-alpha=1).
+per-iteration tolerance of 1 * 10\textsuperscript{-8},
+$alpha=1$).
 %
-The second half of the data was projected onto the
-latent components discovered in first data half.
-The ensuing component loadings were submitted to ordinary
+ICA performed iterative blind source separation
+by a parallel FASTICA implementation (200 maximum iterations,
+per-iteration tolerance of 0.0001,
+initialized by random mixing matrix, whitening).
+%
+AE found a code of latent representations by optimizing projection
+into a bottleneck
+(500 iterations, same implementation as below for rest data).
+%
+The second half of the task data was projected onto the
+latent components discovered in its first half.
+Only the ensuing component loadings were submitted to ordinary
 logistic regression
 (one hidden layer, $\ell_1=0.1$, $\ell_2=0.1$, 500 maximum iterations).
 %
-This serail two-step approach was
-compared against SS-LR LogReg
-(two hidden layers, $\ell_1=0.1$, $\ell_2=0.1$,
-500 maximum iterations, $\lambda=0.75$).
+These serial two-step approaches were
+compared against parallel decomposition and classification by FLogReg
+(two hidden layers, $\lambda=1.00$, $\ell_1=0.1$, $\ell_2=0.1$,
+500 iterations).
 Importantly, all trained classification models were tested
-on a large, unseen test set (20\% of data) in the presented analyses.
+on a large, unseen test set (20\% of data) in the present analyses.
 %
-Across choices for $n$, SS-LR LogReg
-achieved more than 96\% out-of-sample accuracy, whereas
-supervised learning based on ICA and SPCA loadings
-ranged from 38\% to 87\%
-and
-32\% to 84\%, respectively (Table \ref{table_one}).
+Across choices for $n$, FLogReg
+achieved more than 95\% out-of-sample accuracy, whereas
+supervised learning based on PCA, SPCA, ICA, and AE loadings
+ranged from 32\% to 87\%
+(Table \ref{table_one}).
 %
 These explorations attest to the advantage of directly searching for
 classification-relevant structure in the fMRI data,
-rather than solving supervised and unsupervised problems independently.
+rather than solving the supervised and unsupervised problems independently.
 This effect was particularly pronounced when assuming few hidden dimensions.
 
 \begin{table}[h]
  \centering
- \resizebox{0.5\textwidth}{!}{%
- \begin{tabular}{lccc}
+ \resizebox{0.8\textwidth}{!}{%
+ \begin{tabular}{lccccc}
  \hline
- \textit{n}               & ICA + LogReg & SPCA + LogReg & SS-LR LogReg \\ \hline
- \multicolumn{1}{l|}{5}   & 37,5 \%     & 32,2 \%      & 96,5 \%     \\
- \multicolumn{1}{l|}{20}  & 81,0 \%     & 78,2 \%      & 97,3 \%     \\
- \multicolumn{1}{l|}{50}  & 84,2 \%     & 84,0 \%      & 97,7 \%     \\
- \multicolumn{1}{l|}{100} & 87,3 \%     & 82,2 \%      & 97,8 \%     \\ \hline
+ \textit{n}               & PCA + LogReg   & SPCA + LogReg  & ICA + LogReg  & AE + LogReg    & FLogReg      \\ \hline
+ \multicolumn{1}{l|}{5}   & 45,1 \%        & 32,2 \%        & 37,5 \%       & 44,2 \%        & 95,7 \%      \\
+ \multicolumn{1}{l|}{20}  & 78,1 \%        & 78,2 \%        & 81,0 \%       & 63,2 \%        & 97,3 \%      \\
+ \multicolumn{1}{l|}{50}  & 81,7 \%        & 84,0 \%        & 84,2 \%       & 77,0 \%        & 97,6 \%      \\
+ \multicolumn{1}{l|}{100} & 81,3 \%        & 82,2 \%        & 87,3 \%       & 76,6 \%        & 97,4 \%      \\ \hline
  \end{tabular}
  }
  \vspace{-0.2cm}
@@ -649,12 +661,12 @@ This effect was particularly pronounced when assuming few hidden dimensions.
  \end{table}
 
 \paragraph{Model performance.}
-SS-LR LogReg was subsequently trained ($500$ epochs) across parameter choices
+SS-F LogReg was subsequently trained ($500$ epochs) across parameter choices
 for the hidden components ($n=5, 20, 100$) and
 the balance between autoencoder and logistic regression
 ($\lambda=0, 0.25, 0.5, 0.75, 1$).
 Assuming 5 latent directions of variation should yield models with
-higher bias and smaller variance then SS-LR LogReg with 100 latent directions.
+higher bias and smaller variance then SS-F LogReg with 100 latent directions.
 %
 Given the 18-class problem of HCP, setting $\lambda$ to $0$
 consistently yields generalization performance
@@ -673,7 +685,7 @@ logistic regression on the ensuing component loadings.
   \centering
   \resizebox{1.00\textwidth}{!}{%
 \tabcolsep=0.05cm
-\begin{tabular}{l|ccccc|ccccc|ccccc|}
+\begin{tabular}{l|ccccc|ccccc|ccccc}
   \hline
                             & \multicolumn{5}{c|}{\textit{n = 5}}                                                                                                                                                 & \multicolumn{5}{c|}{\textit{n = 20}}                                                                                                                                                      & \multicolumn{5}{c}{\textit{n = 100}}                                                                           \\ \hline
   \textit{}                 & \multicolumn{1}{l}{$\lambda=0$}    & \multicolumn{1}{l}{$\lambda=0.25$} & \multicolumn{1}{l}{$\lambda=0.5$} & \multicolumn{1}{l}{$\lambda=0.75$} & \multicolumn{1}{l|}{$\lambda=1$} & \multicolumn{1}{l}{$\lambda=0$}  & \multicolumn{1}{l}{$\lambda=0.25$}   & \multicolumn{1}{l}{$\lambda=0.5$}   & \multicolumn{1}{l}{$\lambda=0.75$}   & \multicolumn{1}{l|}{$\lambda=1$}   & $\lambda=0$      & $\lambda=0.25$   & $\lambda=0.5$    & $\lambda=0.75$   & \multicolumn{1}{l}{$\lambda=1$}    \\ \hline
@@ -685,7 +697,7 @@ logistic regression on the ensuing component loadings.
   \end{tabular}
 }
 \vspace{-0.2cm}
- \caption{\textbf{Performance of SS-LR LogReg across model parameter choices.}
+ \caption{\textbf{Performance of SS-F LogReg across model parameter choices.}
  Chance is at 5,6\%.
  }
   \label{table_two}
@@ -695,7 +707,7 @@ We made several noteworthy observations (Table \ref{table_two}).
 %
 First, the purely supervised estimator ($\lambda=1$) achieved in no
 instance the best accuracy, precision, recall or f1 scores on HCP data.
-Classification by low-rank logistic regression is therefore facilitated by
+Classification by factored logistic regression is therefore facilitated by
 imposing structure from the unlabeled rest data.
 %
 Second, the higher the number of latent components $n$,
@@ -715,7 +727,7 @@ beyond the supervised problem at hand.
 % Depicts f1 scores for prediction of each of 38 classes across training epochs.
 % Ordinary logistic regression operating in voxel space (\textit{left plot})
 % converged faster but performed worse than
-% low-rank logistic regression for few
+% factored logistic regression for few
 % (\textit{middle plot}) and many (\textit{right plot}).
 % Autoencoder or rest data were not used for these analyses
 % ($\lambda=1$).
@@ -743,7 +755,7 @@ $\approx{17\%}$ (Figure \ref{fig_dimred}).
 Depicts f1 scores for prediction of each of 38 classes across training epochs.
 Ordinary logistic regression operating in voxel space (\textit{left plot})
 converged faster but performed worse than
-low-rank logistic regression for few
+factored logistic regression for few
 (\textit{middle plot}) and many (\textit{right plot}) latent modes.
 Autoencoder or rest data were not used for these analyses
 ($\lambda=1$).
@@ -792,7 +804,7 @@ and the averaged neural activity map for each of the 18 tasks.
 Ordinary logistic regression thus yielded a mean correlation of
 of $\rho=0.28$.
 %
-For SS-LR LogReg ($\lambda=0.25, 0.5, 0.75, 1$),
+For SS-F LogReg ($\lambda=0.25, 0.5, 0.75, 1$),
 a per-class-weight map was computed by matrix
 multiplication of the two inner layers.
 Feature identification thus ranged
@@ -801,20 +813,20 @@ between $\rho=0.59$ and $\rho=0.69$ for $n=20$, and
 between $\rho=0.58$ and $\rho=0.69$ for $n=100$.
 %
 Consequently,
-SS-LR LogReg puts higher absolute weights on relevant structure.
+SS-F LogReg puts higher absolute weights on relevant structure.
 This reflect a higher signal-to-noise ratio, in part explained
 by the more BOLD-typical local contiguity.
 %
-Conversely, SS-LR LogReg puts lower probability mass on irrelevant structure.
+Conversely, SS-F LogReg puts lower probability mass on irrelevant structure.
 Despite lower interpretability, the
 salt-and-pepper-like weight maps obtained from
 ordinary logistic regression are sufficient for
 good classification performance.
 %
-Hence, SS-LR LogReg yielded class weights 
+Hence, SS-F LogReg yielded class weights 
 that were much more similar to features of the respective training samples
 for any choice of $\lambda$.
-SS-LR LogReg therefore
+SS-F LogReg therefore
 captures genuine properties of neural activity patterns,
 rather than participant- or study-specific artefacts.
 XXX: But what you show here is mostly a denoising or regularization effect.
@@ -828,19 +840,18 @@ XXX: But what you show here is mostly a denoising or regularization effect.
 The voxel predictors corresponding to 5 exemplary
 (of 18 total) psychological tasks (\textit{rows})
 from the HCP dataset \cite{barch2013}.
-\textit{Left column:} ordinary logistic regression (same
+\textit{Left column:} multinomial logistic regression (same
 implementation but without bottleneck or autoencoder),
-XXX: sorry, but is this a multinomial or plain logistic ? Please clarify 
-\textit{middle column:} semi-supervised low-rank logistic regression
+\textit{middle column:} semi-supervised factored logistic regression
 ($n=20$ latent components, $\lambda=0.5$, $\ell_1=0.1$, $\ell_2=0.1$),
 \textit{right column:} voxel-wise average of whole-brain
 activity maps from each task.
-Low-rank logistic regression
-a) puts higher absolute weights on relevant structure
+Semi-supervised factored logistic regression
+a) puts higher absolute weights on relevant structure,
 b) lower ones on irrelevant structure,
 and
 c) yields BOLD-typical local contiguity.
-All values are z-scored and thresholded at the 75th percentile.
+All values are z-scored and thresholded at the $75^{th}$ percentile.
 }
 \label{fig_weights}
 \end{figure}

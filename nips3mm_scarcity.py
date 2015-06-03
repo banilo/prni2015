@@ -1243,3 +1243,52 @@ plt.grid(False)
 plt.show()
 plt.savefig(op.join(WRITE_DIR,
             k.replace(' ', '_') + '_%icomps_scarcities2.png' % n_comp))
+            
+# final scarcity plot 3
+n_comps = [20]
+nrests = []
+naccs = []
+pkgs = glob.glob(RES_NAME + '/*dbg_acc_val_*.npy')
+for n_comp in n_comps:  # 
+    plt.figure()
+    for p in pkgs:
+        lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
+        # n_hidden = int(re.search('comp=(?P<comp>.{1,2,3})_', p).group('comp'))
+        n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
+        max_samples = int(re.search('max(.{1,4})_', p).group(1))
+        rest_samples = int(re.search('_r(.{1,4})_', p).group(1))
+        task_samples = int(re.search('_t(.{2,4})dbg', p).group(1))
+        
+        if (task_samples != 100) or (rest_samples == 1) or (rest_samples == 200):
+            continue
+        
+        if n_comp != n_hidden:
+            continue
+
+        print rest_samples
+        print p
+
+        dbg_acc_val_ = np.load(p)
+
+        # naccs.append(np.max(dbg_acc_val_))
+        naccs.append(dbg_acc_val_[-1])
+        nrests.append(rest_samples)
+
+    nrests = np.array(nrests)
+    naccs = np.array(naccs)
+    inds = np.argsort(nrests)
+    plt.plot(
+        nrests[inds],
+        naccs[inds])
+
+    # plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss')
+    plt.legend(loc='lower right', fontsize=9)
+    plt.yticks(np.linspace(0., 1., 11))
+    plt.xticks(nrests[inds], nrests[inds])
+    plt.ylabel('validation set accuracy')
+    plt.ylim(0., 1.05)
+    plt.xlabel('nrest')
+    plt.grid(True)
+    plt.show()
+    plt.savefig(op.join(WRITE_DIR,
+                'scarcities_ncomp=%i_100.png' % n_comp))
