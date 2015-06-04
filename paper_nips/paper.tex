@@ -354,7 +354,7 @@ We were further interested in the utility of the
 optimized low-rank projection
 in one task dataset for dimensionality reduction in another task dataset.
 To this end, the HCP-derived network decompositions were used as preliminary
-step in the classifcation problem of another large sample.
+step in the classification problem of another large sample.
 The ARCHI dataset \cite{pinel07} provides activity maps from
 diverse experimental tasks, including auditory and visual perception, motor action,
 reading, language comprehension and mental calculation.
@@ -375,6 +375,7 @@ a Gaussian kernel of 5mm (FWHM).
 Analogous to HCP data, the second task dataset incorporated 1404
 labeled, grey-matter masked, and z-scored activity maps
 from 18 diverse tasks acquired in 78 participants.
+% XXX: details on data should be given as supplementary material. the section is boring for most NIPS readers
 
 The labeled and unlabeled data were fed into a linear statistical model
 composed of an autoencoder and factored logistic regression.
@@ -422,6 +423,7 @@ minimizing the expected squared reconstruction error
 This reconstruction error criterion equates with
 maximizing a lower bound on the mutual information between
 input and the learned representation.
+% XXX Give a ref ?
 Here we choose $\mathbf{W_0}$ and $\mathbf{W_1}$ to be tied, i.e.
 $\mathbf{W_0} = \mathbf{W_1^T}$. In particular, this means that the weights
 learned are forced to take a two-fold function: That of signal 
@@ -444,11 +446,11 @@ It gives the probability of an input $\mathbf{x}$ to belong
 to a class $i \in \{1, \dots, l\}$
 \begin{equation}
   \begin{split}
-    P(Y=i|\mathbf{x; V_0,V_1,c_0, c_1}) &= \softmax_i(f_{RL}(\mathbf x)),
+    P(Y=i|\mathbf{x; V_0,V_1,c_0, c_1}) &= \softmax_i(f_\mathcal{LR}(\mathbf x)),
   \end{split}
   \label{eq:lr}
 \end{equation}
-where \(f_{LR}(\mathbf x) = \mathbf{V_1 (V_0 x + c_0) + c_1}\) computes 
+where \(f_\mathcal{LR}(\mathbf x) = \mathbf{V_1 (V_0 x + c_0) + c_1}\) computes 
 multinomial logits and \(\softmax_i(x) = \exp(x_i)/\sum_j\exp(x_j)\).
 The matrix $\mathbf{V_0 \in \mathbb{R}^{dxn}}$
 transforms the input $\mathbf{x \in \mathbb{R}^{d}}$
@@ -492,8 +494,8 @@ with respect to the (unsupervised) reconstruction error and the
 ${\mathcal{L_{AE}}}$ is devided by ${N_{X_{rest}}}$ to equilibrate both
 loss terms to the same order of magnitude.
 \(\Omega(\theta)\) represents a regularization, for which we choose the
-ElasticNet-type, i.e., a combination of $\ell_1$ and $\ell_2$ penalties
-$\forall p \in \theta$.
+ElasticNet-type, i.e., a combination of $\ell_1$ and $\ell_2$ penalties.
+%$\forall p \in \theta$.
 
 % XXX Michael: To sum up the math in this paragraph: We need to decide what
 % XXX the \mathcal L are supposed to mean - sample wise loss or expected loss
@@ -531,7 +533,8 @@ are given by
 % simultaneously at every bach in every epoch
 \begin{eqnarray}
   \begin{split}
-    \mathbf{v^{(t+1)}} &= \rho \mathbf{v^{(t+1)}} + (1 - \rho)\left(\nabla_{\theta} f(x^{(t)}, y^{(t)}, \theta^{(t)})\right)^2
+    \mathbf{v^{(t+1)}} &= \rho \mathbf{v^{(t)}} + (1 - \rho)\left(\nabla_{\theta} f(x^{(t)}, y^{(t)}, \theta^{(t)})\right)^2
+% XXX: I have changed the first equation, please check
 %v^{(t+1)} = \rho v^{(t+1)} + (1 - \rho)˜|\nabla f
 \\
 \theta^{(t+1)} &= \theta^{(t)} + \alpha \frac{\nabla_{\theta} f(x^{(t)}, y^{(t)}, \theta^{(t)})}{\sqrt{\mathbf{v^{(t+1)}} + \epsilon}},
@@ -543,7 +546,7 @@ are given by
 % XXX: Bertrand: what is f ?? Danilo: replaced f by more detailed notation
 where $f$ is the loss function computed on a minibatch sample at timestep $t$,
 $\alpha$ is the learning rate ($0.00001$),
-$\epsilon$ a global damping factor ($10^{-6}$),
+$\epsilon$ a global damping factor ($10^{-6}$)
 and
 $\rho$ the decay rate ($0.9$ to deemphasize the magnitude of the gradient).
 %
