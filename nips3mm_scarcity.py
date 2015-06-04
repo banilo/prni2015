@@ -1,3 +1,4 @@
+
 """
 HCP: semi-supervised network decomposition by low-rank logistic regression
 """
@@ -518,8 +519,8 @@ dbg_epochs_ = np.load(pkgs[0])
 
 d = {
     'in-sample accuracy': '/*dbg_acc_train*.npy',
-    'out-of-sample accuracy': '/*dbg_acc_val_*.npy',
-    'accuracy other ds': '/*dbg_acc_other_ds_*.npy',
+    # 'out-of-sample accuracy': '/*dbg_acc_val_*.npy',
+    # 'accuracy other ds': '/*dbg_acc_other_ds_*.npy',
     # 'loss ae': '/*dbg_ae_cost_*.npy',
     # 'loss lr': '/*dbg_lr_cost_*.npy',
     # 'loss combined': '/*dbg_combined_cost_*.npy'
@@ -578,7 +579,10 @@ for k, v in d.iteritems():
                     k.replace(' ', '_') + '_%icomps.png' % n_comp))
 
 n_comps = [20]
-pkgs = glob.glob(RES_NAME + '/*dbg_acc_val_*.npy')
+import re
+pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
+dbg_epochs_ = np.load(pkgs[0])
+pkgs = glob.glob(RES_NAME + '/*dbg_acc_train*.npy')
 for n_comp in n_comps:  # 
     plt.figure()
     for p in pkgs:
@@ -589,7 +593,7 @@ for n_comp in n_comps:  #
         rest_samples = int(re.search('_r(.{1,4})_', p).group(1))
         task_samples = int(re.search('_t(.{2,4})dbg', p).group(1))
         
-        if (task_samples != 100):
+        if (task_samples != 100) or (rest_samples != 1000):
             continue
         
         if n_comp != n_hidden:
@@ -606,9 +610,10 @@ for n_comp in n_comps:  #
         cur_label += 'nrest%i' % rest_samples
         cur_label += '/'
         cur_label += 'ntask=%i' % task_samples
+        npoints = min(len(dbg_acc_val_), len(dbg_epochs_))
         plt.plot(
-            dbg_epochs_,
-            dbg_acc_val_,
+            dbg_epochs_[:npoints],
+            dbg_acc_val_[:npoints],
             label=cur_label)
     plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss')
     plt.legend(loc='lower right', fontsize=9)
