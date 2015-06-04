@@ -501,7 +501,7 @@ $\forall p \in \theta$.
 
 \paragraph{Optimization.}
 The common objective was optimized
-by gradient descent in the SS-F LogReg parameters.
+by gradient descent in the SS-FLogReg parameters.
 %
 The required gradients were obtained by using the chain rule to
 backpropagate error derivatives.
@@ -652,12 +652,12 @@ This effect was particularly pronounced when assuming few hidden dimensions.
  \label{table_one}
  \end{table}
 \paragraph{Model performance.}
-SS-F LogReg was subsequently trained ($500$ epochs) across parameter choices
+SS-FLogReg was subsequently trained ($500$ epochs) across parameter choices
 for the hidden components ($n=5, 20, 100$) and
 the balance between autoencoder and logistic regression
 ($\lambda=0, 0.25, 0.5, 0.75, 1$).
 Assuming 5 latent directions of variation should yield models with
-higher bias and smaller variance then SS-F LogReg with 100 latent directions.
+higher bias and smaller variance then SS-FLogReg with 100 latent directions.
 %
 Given the 18-class problem of HCP, setting $\lambda$ to $0$
 consistently yields generalization performance
@@ -688,7 +688,7 @@ logistic regression on the ensuing component loadings.
   \end{tabular}
 }
 \vspace{-0.2cm}
- \caption{\textbf{Performance of SS-F LogReg across model parameter choices.}
+ \caption{\textbf{Performance of SS-FLogReg across model parameter choices.}
  Chance is at 5,6\%.
  }
   \label{table_two}
@@ -736,13 +736,27 @@ Indeed, increased class separability in component space,
 as compared to voxel space, entails differences in
 generalization performance of
 $\approx{17\%}$ (Figure \ref{fig_dimred}).
+%
+Notably,
+the cognitive tasks on reward and punishment processing
+are among the least predicted with ordinary but well predicted with
+factored logistic regression
+(tasks 3 and 4 in Figure \ref{fig_dimred}).
+These experimental conditions have indeed been reported to exhibit
+highly similar neural activity patterns in
+GLM analyses of that dataset \cite{barch2013}.
+Consequently, also local activity differences
+(in the striatum and visual cortex in this case) can
+be successfully captured by brain-network modelling.
+%
 \begin{figure}
 \begin{centering}
 \includegraphics[width=1.00\textwidth]{figures/accuracies.pdf}
 \end{centering}
 \vspace{-0.5cm}
 \caption{\textbf{Effect of bottleneck in a 38-task classificaton problem}
-Depicts the f1 score for each of 38 class predictions (chance is  $2,6\%$).
+Depicts the f1 score for each of 38 class predictions (chance is  $2,6\%$)
+sorted from lowest to highest.
 Multinomial logistic regression operating in voxel space (\textit{blue bars})
 was compared to 
 factored logistic regression operating in $20$
@@ -794,7 +808,7 @@ and the averaged neural activity map for each of the 18 tasks.
 Ordinary logistic regression thus yielded a mean correlation
 of $\rho=0.28$.
 %
-For SS-F LogReg ($\lambda=0.25, 0.5, 0.75, 1$),
+For SS-FLogReg ($\lambda=0.25, 0.5, 0.75, 1$),
 a per-class-weight map was computed by matrix
 multiplication of the two inner layers.
 Feature identification thus ranged
@@ -803,11 +817,11 @@ between $\rho=0.59$ and $\rho=0.69$ for $n=20$, and
 between $\rho=0.58$ and $\rho=0.69$ for $n=100$.
 %
 Consequently,
-SS-F LogReg puts higher absolute weights on relevant structure.
+SS-FLogReg puts higher absolute weights on relevant structure.
 This reflects a higher signal-to-noise ratio, in part explained
 by the more BOLD-typical local contiguity.
 %
-Conversely, SS-F LogReg puts lower probability mass on irrelevant structure.
+Conversely, SS-FLogReg puts lower probability mass on irrelevant structure.
 Despite lower interpretability, the
 salt-and-pepper-like weight maps obtained from
 ordinary logistic regression are sufficient for
@@ -838,10 +852,10 @@ All values are z-scored and thresholded at the $75^{th}$ percentile.
 \label{fig_weights}
 \end{figure}
 %
-Hence, SS-F LogReg yielded class weights 
+Hence, SS-FLogReg yielded class weights 
 that were much more similar to features of the respective training samples
 for any choice of $\lambda$.
-SS-F LogReg therefore
+SS-FLogReg therefore
 captures genuine properties of neural activity patterns,
 rather than participant- or study-specific artefacts.
 
@@ -876,15 +890,16 @@ which favored ElasticNet regularization chosen in the above analyses.
 
 \section{Discussion and Conclusion}
 % Conceptual recap+gain of current paper
-Using the flexibility of autoencoders, we
-learn the optimal decomposition from high-dimensional
-voxel brain space into the most important activity patterns for a
-supervised learning question.
+Using the flexibility of factored models,
+we learn the low-dimensional representation from high-dimensional
+voxel brain space that is most important for
+prediction of cognitive task sets.
 %
 From a machine-learning perspective,
 factorization of the logistic regression weights
-can be viewed as transforming a ``multi-class problem'' into
-``multi-task learning''.
+can be viewed as transforming a
+``multi-class classification problem''
+into a ``multi-task learning problem''.
 %
 The higher generalization accuracy and feature recovery, comparing to
 ordinary logistic regression, hold potential
@@ -892,7 +907,7 @@ for adoption in various neuroimaging analyses.
 Besides increased performance, these models are more interpretable by
 automatically learning a mapping to and from a brain-network space.
 %
-This domain-specifc classification algorithms
+This domain-specifc learning algorithm
 encourages departure from the artificial and statistically
 less attractive voxel space.
 Neurobiologically,
@@ -909,7 +924,8 @@ facilitate the quest for the cognitive primitives of
 human thought.
 %
 We hope that these first steps stimulate development towards
-powerful semi-supervised classification methods in systems neuroscience.
+powerful semi-supervised representation extraction
+in systems neuroscience.
 
 % grand perspective
 In the future, automatic reduction of brain maps to

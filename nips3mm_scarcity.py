@@ -41,7 +41,7 @@ if not op.exists(WRITE_DIR):
     os.mkdir(WRITE_DIR)
 
 MAX_SAMPLES = 2000
-MAX_REST_SAMPLES = 750
+MAX_REST_SAMPLES = 1000
 MAX_TASK_SAMPLES = 100
 
 ##############################################################################
@@ -466,7 +466,7 @@ n_comps = [20]
 for n_comp in n_comps:
     # for lambda_param in [0]:
     #for lambda_param in [0.5]:
-    for lambda_param in [0.5]:
+    for lambda_param in [0.25, 0.75, 1]:
         l1 = 0.1
         l2 = 0.1
         my_title = r'Low-rank LR + AE (combined loss, shared decomp): n_comp=%i L1=%.1f L2=%.1f lambda=%.2f res=3mm spca20RS max%i r%i t%i' % (
