@@ -384,12 +384,9 @@ The affine autoencoder takes the input
 $\mathbf{x}$ and projects it into coordinates of a
 latent representation $\mathbf{z}$
 and reconstructs it back to $\mathbf{x'}$ by
-
 \begin{eqnarray}
-  \begin{split}
-    \mathbf{z} &= \mathbf{W_0} \mathbf{x} + \mathbf{b_0} \\
-    \mathbf{x'} &= \mathbf{W_1} \mathbf{z} + \mathbf{b_1}
-  \end{split}
+    \mathbf{z} = \mathbf{W_0} \mathbf{x} + \mathbf{b_0} \hspace{2cm}
+    \mathbf{x'} = \mathbf{W_1} \mathbf{z} + \mathbf{b_1},
   \label{eq:autoenc}
 \end{eqnarray}
 
@@ -411,11 +408,11 @@ output space (decoder).
 $\mathbf{b_0}$ and $\mathbf{b_1}$ are bias vectors.
 The model parameters $\mathbf{W_0, b_0, b_1}$ are found by
 minimizing the expected squared reconstruction error
-
 \begin{equation}
   \mathbb E\left[{\mathcal{L_{AE}}}(\mathbf{x})\right] = %
   \mathbb E\left[\| \mathbf{x} - \mathbf{W_1}(\mathbf{W_0}\mathbf{x} + \mathbf{b_0}) + \mathbf{b_1}) \|^2\right].
 \end{equation}
+
 %with \(f_{AE}(\mathbf x) = %
 %\mathbf{W_1}(\mathbf{W_0}\mathbf{x} + \mathbf{b_0}) + \mathbf{b_1}\)
 % the autoencoder.
@@ -445,10 +442,9 @@ is also imposed by the first layer of the factored
 multinomial logistic regression.
 It gives the probability of an input $\mathbf{x}$ to belong
 to a class $i \in \{1, \dots, l\}$
-
 \begin{equation}
   \begin{split}
-    P(Y=i|\mathbf{x; V_0,V_1,c_0, c_1}) &= \softmax_i(f_{RL}(\mathbf x))
+    P(Y=i|\mathbf{x; V_0,V_1,c_0, c_1}) &= \softmax_i(f_{RL}(\mathbf x)),
   \end{split}
   \label{eq:lr}
 \end{equation}
@@ -463,10 +459,9 @@ onto hyperplanes that reflect $l$ label probabilities.
 $\mathbf{c_0}$ and $\mathbf{c_1}$ are corresponding
 bias vectors.
 The loss function is given by
-
 \begin{equation}
     \mathbb E\left[{\mathcal{L_{LR}}}(\mathbf{x, y})\right] \approx %
-\frac{1}{N_{X_{task}}} \sum_{k=0}^{N_{X_{task}}} \log(P(Y=y^{(k)}|\mathbf{x^{(k)}; V_0, V_1, c_0, c_1})
+\frac{1}{N_{X_{task}}} \sum_{k=0}^{N_{X_{task}}} \log(P(Y=y^{(k)}|\mathbf{x^{(k)}; V_0, V_1, c_0, c_1}).
 \label{eq:lr_loss}
 \end{equation}
 
@@ -483,7 +478,6 @@ components that represent a latent code optimized for both
 rest and task activity data.
 Second, the objectives of the autoencoder and the factored
 logistic regression are interpolated in the common loss function
-
 % XXX Michael: In resolving conflict I opted for my change. Feel free to revert if that was intended.
 \begin{equation}
 {\mathcal{L}}(\theta, \lambda) = \lambda {\mathcal{L_{LR}}}
@@ -535,7 +529,6 @@ are given by
 %
 % XXX Danilo: I think we are not alternating, Xrest and Xtask go in
 % simultaneously at every bach in every epoch
-
 \begin{eqnarray}
   \begin{split}
     \mathbf{v^{(t+1)}} &= \rho \mathbf{v^{(t+1)}} + (1 - \rho)\left(\nabla_{\theta} f(x^{(t)}, y^{(t)}, \theta^{(t)})\right)^2
@@ -546,10 +539,8 @@ are given by
 \end{eqnarray}
 % XXX Michael: Why, in the formula, do we have two different notations for
 % XXX partial derivatives? \partial and \nabla
-
 % XXX Michael: Probably remove the explanations following and just state values
 % XXX: Bertrand: what is f ?? Danilo: replaced f by more detailed notation
-
 where $f$ is the loss function computed on a minibatch sample at timestep $t$,
 $\alpha$ is the learning rate ($0.00001$),
 $\epsilon$ a global damping factor ($10^{-6}$),
@@ -609,7 +600,7 @@ a regression-type optimization problem constrained by
 $\ell_1$-penalty
 (no orthogonality assumptions, 1000 maximum iterations,
 per-iteration tolerance of 1 * 10\textsuperscript{-8},
-$alpha=1$).
+$\alpha=1$).
 %
 ICA performed iterative blind source separation
 by a parallel FASTICA implementation (200 maximum iterations,
@@ -643,11 +634,10 @@ These explorations attest to the advantage of directly searching for
 classification-relevant structure in the fMRI data,
 rather than solving the supervised and unsupervised problems independently.
 This effect was particularly pronounced when assuming few hidden dimensions.
-
 \begin{table}[h]
  \centering
  \resizebox{0.8\textwidth}{!}{%
- \begin{tabular}{lccccc}
+ \begin{tabular}{l|c|c|c|c|c}
  \hline
  \textit{n}               & PCA + LogReg   & SPCA + LogReg  & ICA + LogReg  & AE + LogReg    & FLogReg              \\ \hline
  \multicolumn{1}{l|}{5}   & 45,1 \%        & 32,2 \%        & 37,5 \%       & 44,2 \%        & \textbf{95,7\%}      \\
@@ -662,7 +652,6 @@ This effect was particularly pronounced when assuming few hidden dimensions.
  }
  \label{table_one}
  \end{table}
-
 \paragraph{Model performance.}
 SS-F LogReg was subsequently trained ($500$ epochs) across parameter choices
 for the hidden components ($n=5, 20, 100$) and
@@ -748,25 +737,24 @@ Indeed, increased class separability in component space,
 as compared to voxel space, entails differences in
 generalization performance of
 $\approx{17\%}$ (Figure \ref{fig_dimred}).
-
 \begin{figure}
 \begin{centering}
-\includegraphics[width=1.00\textwidth]{figures/accuracies.png}
+\includegraphics[width=1.00\textwidth]{figures/accuracies.pdf}
 \end{centering}
 \vspace{-0.5cm}
 \caption{\textbf{Effect of bottleneck in a 38-task classificaton problem}
-Depicts f1 scores for prediction of each of 38 classes across training epochs.
-Ordinary logistic regression operating in voxel space (\textit{left plot})
-converged faster but performed worse than
-factored logistic regression for few
-(\textit{middle plot}) and many (\textit{right plot}) latent modes.
+Depicts the f1 score for each of 38 class predictions (chance is  $2,6\%$).
+Multinomial logistic regression operating in voxel space (\textit{blue bars})
+was compared to 
+factored logistic regression operating in $20$
+(\textit{left plot}) and $100$ (\textit{right plot})
+latent modes (\textit{grey bars}).
 Autoencoder or rest data were not used for these analyses
 ($\lambda=1$).
-Hence, projecting the input data into a reduced space for classification
-yields higher class separability.
-Chance is at 2,6\%.
-XXX: ugly figure: use larger font for labels and titles.
-XXX: includes pdf figures, not a png file.
+Ordinary logistic regression yielded 77,7\% accuracy out of sample, while
+factored logistic regreesion scored at 94,4\% ($n=20$) and 94,2\% ($n=100$).
+Hence, compressing the voxel data into a component space for classification
+achieves higher task separability.
 }
 \label{fig_dimred}
 \end{figure}

@@ -1010,6 +1010,53 @@ plt.xlabel('Plain Vanilla LogReg')
 plt.ylabel('Low-Rank LogReg (n=100)')
 plt.savefig(op.join(WRITE_DIR, 'scattern_againstLR_%icomps.png' % 100))
 
+# barplot against vanilla
+plt.close('all')
+newmeth1 = np.load(op.join(WRITE_DIR, 'Low-rank_LR_AE_(combined_loss,_shared_decomp)_n_comp=20_L1=0.1_L2=0.1_lambda=1.00_res=3mm_spca20RSdbg_prfs_.npy'))
+newmeth2 = np.load(op.join(WRITE_DIR, 'Low-rank_LR_AE_(combined_loss,_shared_decomp)_n_comp=100_L1=0.1_L2=0.1_lambda=1.00_res=3mm_spca20RSdbg_prfs_.npy'))
+newmeth = (newmeth1, newmeth2)
+ordinary = np.load(op.join('nips3mm_h38_vanilla', 'LR_L1=0.1_L2=0.1_res=3mmdbg_prfs_.npy'))
+n_comps = [20, 100]
+for n_comp, newmeth in zip(n_comps, newmeth):
+    plt.figure()
+    my_width = 0.2
+    x_pos = 0
+    pos_list = list()
+    c_sslr = '#404040'
+    c_normal = '#51A2E0'
+    my_fs = 16
+    for i in np.arange(38):
+        if (i == 0):
+            plt.bar(x_pos, newmeth[-1, 2, i], width=my_width, color=c_sslr,
+                    label='Factored Logistic Regression')
+            plt.bar(x_pos, ordinary[-1, 2, i], width=my_width, color=c_normal,
+                    label='Ordinary Logistic Regression')
+        else:
+            plt.bar(x_pos, newmeth[-1, 2, i], width=my_width, color=c_sslr)
+            plt.bar(x_pos, ordinary[-1, 2, i], width=my_width, color=c_normal)
+        pos_list.append(x_pos)
+        x_pos += my_width
+
+    plt.ylim(0, 1.05)
+    plt.xlim(0, x_pos)
+    plt.xlabel('mental task')
+    plt.title('$n=%i$' % n_comp, fontsize=my_fs)
+    plt.xticks(
+        np.array(pos_list[::2]) + my_width / 2,
+        np.arange(0, 38)[::2] + 1,
+        fontsize=my_fs)
+    plt.yticks(np.linspace(0, 1, 11), fontsize=my_fs)
+    plt.ylabel('f1 score')
+    plt.xlabel('task', fontsize=my_fs)
+    plt.ylabel('f1 score', fontsize=my_fs)
+    plt.legend(loc='lower left', fontsize=my_fs - 2.5)
+    plt.show()
+    plt.savefig(op.join(WRITE_DIR, 'bars_against_LR_%icomps.png' % n_comp))
+
+plt.xlim(0, 1.)
+plt.ylim(0, 1.)
+plt.savefig(op.join(WRITE_DIR, 'scattern_againstLR_%icomps.png' % 100))
+
 # print components
 pkgs = glob.glob(RES_NAME + '/*comps.npy')
 for p in pkgs:
