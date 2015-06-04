@@ -129,7 +129,7 @@ Network discovery by applying ICA or SPCA is typically performed on
 task-unrelated (i.e., \textit{unlabeled}) ``resting-state'' data.
 These capture brain dynamics
 during ongoing random thought without controlled environmental stimulation.
-In fact, a large proportion of the BOLD signal variation
+In fact, a large portion of the BOLD signal variation
 is known
 not to correlate with a particular behavior, stimulus, or experimental task
 \cite{fox07}. 
@@ -164,11 +164,12 @@ These may allow better discovery of
 the manifold of brain states
 due to the high task-rest similarities of neural activity patterns,
 as observed using ICA \cite{smith2009}.
+% XXX: you don't discuss the absence of information sharing across tasks / cognitions, i.e. the multi-task aspect of your work.
 
 Both these neurobiological properties can be conjointly exploited in an
 approach that is
-mixed (i.e., using rest and task data)
-and 
+mixed (i.e., using rest and task data),
+multitask and 
 factored (i.e., performing network decomposition).
 %
 The integration of brain-network discovery into
@@ -253,8 +254,8 @@ From the perspective of dictionary learning, the first layer represents
 % XXX weights are tied, they are one and the same thing, with interesting
 % XXX implications. But in general, only the second layer represents a basis.
 projectors to the discovered set of basis functions
-whose linear combinations are learned
-by the second layer \cite{olshausen96}.
+which are linearly combined 
+by the second layer to perform predictions\cite{olshausen96}.
 % XXX Michael: ^ This needs to be changed around: This first layer obtains
 % XXX activations, the second layer weights are basis functions which are
 % XXX multiplied to these activations
@@ -276,10 +277,10 @@ extracted from GLM analyses based on few participants.
 %
 We therefore contribute a computational framework that
 1) co-analyzes many problems simultaneously
-(thus find shared representations by ``multi-task learning'')
+(thus finds shared representations by ``multi-task learning'')
 and
-2) exploits unlabeled data
-(that span a space of meaningful configurations).
+2) exploits unlabeled data,
+as they span a space of meaningful configurations.
 
 \section{Methods}
 %
