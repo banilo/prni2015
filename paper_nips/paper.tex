@@ -737,13 +737,27 @@ Indeed, increased class separability in component space,
 as compared to voxel space, entails differences in
 generalization performance of
 $\approx{17\%}$ (Figure \ref{fig_dimred}).
+%
+Notably,
+the cognitive tasks on reward and punishment processing
+are among the least predicted with ordinary but well predicted with
+factored logistic regression
+(tasks 3 and 4 in Figure \ref{fig_dimred}).
+These experimental conditions have indeed been reported to exhibit
+highly similar neural activity patterns in
+GLM analyses of that dataset \cite{barch2013}.
+Consequently, also local activity differences
+(in the striatum and visual cortex in this case) can
+be successfully captured by brain-network modelling.
+%
 \begin{figure}
 \begin{centering}
 \includegraphics[width=1.00\textwidth]{figures/accuracies.pdf}
 \end{centering}
 \vspace{-0.5cm}
 \caption{\textbf{Effect of bottleneck in a 38-task classificaton problem}
-Depicts the f1 score for each of 38 class predictions (chance is  $2,6\%$).
+Depicts the f1 score for each of 38 class predictions (chance is  $2,6\%$)
+sorted from lowest to highest.
 Multinomial logistic regression operating in voxel space (\textit{blue bars})
 was compared to 
 factored logistic regression operating in $20$
@@ -877,15 +891,16 @@ which favored ElasticNet regularization chosen in the above analyses.
 
 \section{Discussion and Conclusion}
 % Conceptual recap+gain of current paper
-Using the flexibility of autoencoders, we
-learn the optimal decomposition from high-dimensional
-voxel brain space into the most important activity patterns for a
-supervised learning question.
+Using the flexibility of factored models,
+we learn the low-dimensional representation from high-dimensional
+voxel brain space that is most important for
+prediction of cognitive task sets.
 %
 From a machine-learning perspective,
 factorization of the logistic regression weights
-can be viewed as transforming a ``multi-class problem'' into
-``multi-task learning''.
+can be viewed as transforming a
+``multi-class classification problem''
+into a ``multi-task learning problem''.
 %
 The higher generalization accuracy and feature recovery, comparing to
 ordinary logistic regression, hold potential
@@ -893,7 +908,7 @@ for adoption in various neuroimaging analyses.
 Besides increased performance, these models are more interpretable by
 automatically learning a mapping to and from a brain-network space.
 %
-This domain-specifc classification algorithms
+This domain-specifc learning algorithm
 encourages departure from the artificial and statistically
 less attractive voxel space.
 Neurobiologically,
@@ -910,7 +925,8 @@ facilitate the quest for the cognitive primitives of
 human thought.
 %
 We hope that these first steps stimulate development towards
-powerful semi-supervised classification methods in systems neuroscience.
+powerful semi-supervised representation extraction
+in systems neuroscience.
 
 % grand perspective
 In the future, automatic reduction of brain maps to

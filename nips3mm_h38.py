@@ -1025,15 +1025,16 @@ for n_comp, newmeth in zip(n_comps, newmeth):
     c_sslr = '#404040'
     c_normal = '#51A2E0'
     my_fs = 16
+    inds = np.argsort(newmeth[-1, 2, :])
     for i in np.arange(38):
         if (i == 0):
-            plt.bar(x_pos, newmeth[-1, 2, i], width=my_width, color=c_sslr,
+            plt.bar(x_pos, newmeth[-1, 2, inds[i]], width=my_width, color=c_sslr,
                     label='Factored Logistic Regression')
-            plt.bar(x_pos, ordinary[-1, 2, i], width=my_width, color=c_normal,
+            plt.bar(x_pos, ordinary[-1, 2, inds[i]], width=my_width, color=c_normal,
                     label='Ordinary Logistic Regression')
         else:
-            plt.bar(x_pos, newmeth[-1, 2, i], width=my_width, color=c_sslr)
-            plt.bar(x_pos, ordinary[-1, 2, i], width=my_width, color=c_normal)
+            plt.bar(x_pos, newmeth[-1, 2, inds[i]], width=my_width, color=c_sslr)
+            plt.bar(x_pos, ordinary[-1, 2, inds[i]], width=my_width, color=c_normal)
         pos_list.append(x_pos)
         x_pos += my_width
 
@@ -1049,9 +1050,10 @@ for n_comp, newmeth in zip(n_comps, newmeth):
     plt.ylabel('f1 score')
     plt.xlabel('task', fontsize=my_fs)
     plt.ylabel('f1 score', fontsize=my_fs)
-    plt.legend(loc='lower left', fontsize=my_fs - 2.5)
+    plt.legend(loc='lower right', fontsize=my_fs + 1)
+    plt.grid(True)
     plt.show()
-    plt.savefig(op.join(WRITE_DIR, 'bars_against_LR_%icomps.png' % n_comp))
+    plt.savefig(op.join(WRITE_DIR, 'bars_against_LR_%icomps_sorted.png' % n_comp))
 
 plt.xlim(0, 1.)
 plt.ylim(0, 1.)
