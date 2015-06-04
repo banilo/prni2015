@@ -505,6 +505,7 @@ ElasticNet-type, i.e., a combination of $\ell_1$ and $\ell_2$ penalties.
 \paragraph{Optimization.}
 The common objective was optimized
 by gradient descent in the SS-FLogReg parameters.
+% XXX you haven't defined FLogReg
 %
 The required gradients were obtained by using the chain rule to
 backpropagate error derivatives.
@@ -584,9 +585,9 @@ accessible online for reproducibility and reuse
 
 \section{Experimental Results}
 \paragraph{Serial versus parallel structure discovery and classification.}
-We first tested for an advantage of combined unsupervised decomposition
+We first tested whether there is a substantial advantage in combining unsupervised decomposition
 and supervised classification learning.
-We benchmarked against
+We benchmarked our approach against
 performing data reduction on the (unlabeled)
 first half of the HCP task data by PCA, SPCA, ICA, and
 AE ($n=5, 20, 50, 100$ components)
@@ -633,7 +634,7 @@ supervised learning based on PCA, SPCA, ICA, and AE loadings
 ranged from 32\% to 87\%
 (Table \ref{table_one}).
 %
-These explorations attest to the advantage of directly searching for
+This experiment establishes the advantage of directly searching for
 classification-relevant structure in the fMRI data,
 rather than solving the supervised and unsupervised problems independently.
 This effect was particularly pronounced when assuming few hidden dimensions.
@@ -706,7 +707,7 @@ Classification by factored logistic regression is therefore facilitated by
 imposing structure from the unlabeled rest data.
 %
 Second, the higher the number of latent components $n$,
-the higher the out-of-study performance with small choices for $\lambda$.
+the higher the out-of-study performance with small values of $\lambda$.
 This suggests that the presence of more rest-data-inspired hidden components
 results in more effective feature representations in unrelated task data.
 %
@@ -730,8 +731,8 @@ beyond the supervised problem at hand.
 % yields higher class separability.
 
 \paragraph{Individual effects of dimensionality reduction and rest data.}
-We first quantified the gain of introducing a bottleneck layer
-disregarding the autoencoder.
+We first quantified the impact of introducing a bottleneck layer
+that disregards the autoencoder.
 To this end, ordinary logstic regression was juxtaposed
 with FLogReg  at $\lambda=1$ (no autoencoder).
 For this experiment, we increased the difficulty of the classification problem
@@ -911,7 +912,7 @@ for adoption in various neuroimaging analyses.
 Besides increased performance, these models are more interpretable by
 automatically learning a mapping to and from a brain-network space.
 %
-This domain-specifc learning algorithm
+This domain-specific learning algorithm
 encourages departure from the artificial and statistically
 less attractive voxel space.
 Neurobiologically,
