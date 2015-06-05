@@ -848,27 +848,30 @@ For the sake of completeness,
 we informally report modifications of the statistical model
 that did not improve generalization performance.
 %
+$a)$
 Introducing stochasticity into model learning by 
-$a)$ input corruption of $\mathbf{X_{task}}$ or
-$b)$ drop-out at the bottleneck $\mathbf{W_0}$ using binomial
-distributions ($p=0.1, 0.3, 0.5$) deteriorated model performance
+%$a)$ 
+input corruption of $\mathbf{X_{task}}$ %or
+%% $b)$ drop-out at the bottleneck $\mathbf{W_0}$ using binomial
+%% distributions ($p=0.1, 0.3, 0.5$) 
+deteriorated model performance
 in all scenarios.
 %
-Adding $c)$ rectified linear units (ReLU) to $\mathbf{W_0}$ or
-other commonly used nonlinearities ($d)$ sigmoid, $e)$ softplus,
-$f)$ hyperbolic tangent) all led to decreased classification accuracies,
+Adding $b)$ rectified linear units (ReLU) to $\mathbf{W_0}$ or
+other commonly used nonlinearities ($c)$ sigmoid, $d)$ softplus,
+$e)$ hyperbolic tangent) all led to decreased classification accuracies,
 probably due to sample size limits.
 %
-Further, $g)$ ``pretraining'' of the bottleneck $\mathbf{W_0}$
+Further, $f)$ ``pretraining'' of the bottleneck $\mathbf{W_0}$
 (i.e., non-random initialization) by 
 either corresponding SPCA or ICA loadings did not exhibit improved accuracies,
-neither did $h)$ autoencoder pretraining.
+neither did $g)$ autoencoder pretraining.
 %
 Moreover,
-introducing an additional $i)$ overcomplete layer (100 units)
+introducing an additional $h)$ overcomplete layer (100 units)
 after the bottleneck was not advantageous.
 %
-Finally, imposing either $j)$ only $\ell_1$ or 
+Finally, imposing either $i)$ only $\ell_1$ or 
 $k)$ only $\ell_2$ penalty terms
 was disadvantageous in all tested cases,
 which favored ElasticNet regularization chosen in the above analyses.
