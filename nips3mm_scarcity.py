@@ -582,7 +582,7 @@ n_comps = [20]
 import re
 pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
 dbg_epochs_ = np.load(pkgs[0])
-pkgs = glob.glob(RES_NAME + '/*dbg_acc_train*.npy')
+pkgs = glob.glob(RES_NAME + '/*dbg_acc_val*.npy')
 for n_comp in n_comps:  # 
     plt.figure()
     for p in pkgs:
@@ -593,7 +593,7 @@ for n_comp in n_comps:  #
         rest_samples = int(re.search('_r(.{1,4})_', p).group(1))
         task_samples = int(re.search('_t(.{2,4})dbg', p).group(1))
         
-        if (task_samples != 100) or (rest_samples != 1000):
+        if (task_samples != 100) or (rest_samples != 100):
             continue
         
         if n_comp != n_hidden:
@@ -1167,8 +1167,10 @@ plt.savefig(op.join(WRITE_DIR,
 # n_comp = 20
 # path_main = 'nips3mm_scarcity'
 
-# bars
-plt.close('all')
+# bars (varying nrest)
+my_fs = 13
+k, v = ('out-of-sample performance', '/*_n_comp=%i*_lambda=0.50*r%i_t%i*dbg_acc_val_*.npy')
+# plt.close('all')
 cols = ('#EFC94C', '#E27A3F', '#DF4949',
         '#2998FF', '#0068C4', '#004B8D')
 width = 0.25
@@ -1194,18 +1196,93 @@ for (ntask, nrest), col in zip([[100, 50], [100, 100], [100, 150],
         cur_values[-1], width=width,
         color=col)
 
-plt.title('Semi-supervision in data-scarce and data-rich scenarios')
+plt.title('Varying amount of rest structure', fontsize=my_fs + 2)
 # plt.legend(loc='lower right', fontsize=10,
 #            ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
-plt.yticks(np.linspace(0., 1., 11))
-plt.ylabel(k)
-plt.xlabel('task-maps : rest-maps')
-plt.xticks(np.array(x_pos) + (width / 2), x_labels, rotation=35)
+plt.yticks(np.linspace(0., 1., 11), fontsize=my_fs)
+plt.ylabel(k, fontsize=my_fs)
+plt.xlabel('task-maps : rest-maps', fontsize=my_fs)
+plt.xticks(np.array(x_pos) + (width / 2), x_labels, rotation=35,
+           fontsize=my_fs)
 plt.grid(True)
 plt.show()
 plt.tight_layout()
 plt.savefig(op.join(WRITE_DIR,
-            k.replace(' ', '_') + '_%icomps_scarcities.png' % n_comp))
+            k.replace(' ', '_') + '_%icomps_scarcities_nrest.png' % n_comp))
+
+# bars (varying lambda)
+plt.figure()
+# plt.close('all')
+cols = ('#FFF0A5', '#EFC94C', '#E27A3F', '#DF4949',
+        '#79C7D9', '#2998FF', '#0068C4', '#004B8D')
+width = 0.25
+x_pos = [0]
+x_labels = ['chance']
+handle = plt.bar(x_pos[-1], 1. / 18, width=width, color='#696969')
+
+v = '/Low-rank_LR_AE_(combined_loss,_shared_decomp)_n_comp=20_L1=0.1_L2=0.1_lambda=%.2f_res=3mm_spca20RS_max2000_r%i_t%idbg_acc_val_.npy'
+
+for (nmaps, cur_lmb), col in zip([[100, 0.25], [100, 0.5], [100, 0.75], [100, 1],
+                                  [1000, 0.25], [1000, 0.5], [1000, 0.75], [1000, 1]],
+                                cols):
+    pkgs = glob.glob(RES_NAME + (v % (cur_lmb, nmaps, nmaps)))
+    print(pkgs)
+    if len(x_pos) == 1 or len(x_pos) == 5:
+        x_pos += [width * 1.5 + x_pos[-1]]
+    else:
+        x_pos += [width + x_pos[-1]]
+
+    cur_values = np.load(pkgs[0])
+    x_labels += ['$%.2f$' % cur_lmb]
+
+    plt.bar(
+        x_pos[-1],
+        cur_values[-1], width=width,
+        color=col)
+
+plt.title('Varying influence of rest structure', fontsize=my_fs + 2)
+# plt.legend(loc='lower right', fontsize=10,
+#            ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
+plt.yticks(np.linspace(0., 1., 11), fontsize=my_fs)
+plt.ylabel(k, fontsize=my_fs)
+plt.xlabel('$\lambda$', fontsize=my_fs + 2)
+plt.xticks(np.array(x_pos) + (width / 2), x_labels, rotation=35,
+           fontsize=my_fs)
+plt.grid(True)
+plt.show()
+plt.tight_layout()
+plt.savefig(op.join(WRITE_DIR,
+            k.replace(' ', '_') + '_%icomps_scarcities_lmb.png' % n_comp))
+
+# varying lambda (line plot)
+plt.figure()
+# plt.close('all')
+cols = ('#FFF0A5', '#EFC94C', '#E27A3F', '#DF4949',
+        '#79C7D9', '#2998FF', '#0068C4', '#004B8D')
+v = '/Low-rank_LR_AE_(combined_loss,_shared_decomp)_n_comp=20_L1=0.1_L2=0.1_lambda=%.2f_res=3mm_spca20RS_max2000_r%i_t%idbg_acc_%s_.npy'
+my_scores = np.zeros((2, 2, 4))
+for i_set, set_name in ['train', 'val']:
+    for i_scenario, nmaps in enumerate([100, 1000]):
+        for i_lmb, lmb in enumerate([0.25, 0.5, 0.75, 1]):
+            pkgs = glob.glob(RES_NAME + (v % (cur_lmb, nmaps, nmaps, set_name)))
+            print(pkgs)
+            cur_score = np.load(pkgs[0])
+            my_scores[i_set, i_scenario, i_lmb] = cur_score
+
+
+plt.title('Varying influence of rest structure', fontsize=my_fs + 2)
+# plt.legend(loc='lower right', fontsize=10,
+#            ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
+plt.yticks(np.linspace(0., 1., 11), fontsize=my_fs)
+plt.ylabel(k, fontsize=my_fs)
+plt.xlabel('$\lambda$', fontsize=my_fs + 2)
+plt.xticks(np.array(x_pos) + (width / 2), x_labels, rotation=35,
+           fontsize=my_fs)
+plt.grid(True)
+plt.show()
+plt.tight_layout()
+plt.savefig(op.join(WRITE_DIR,
+            k.replace(' ', '_') + '_%icomps_scarcities_lmb.png' % n_comp))
 
 # final scarcity plot 2
 pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
