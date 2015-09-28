@@ -1,4 +1,3 @@
-
 """
 HCP: semi-supervised network decomposition by low-rank logistic regression
 """
@@ -35,6 +34,7 @@ print('Running THEANO on %s' % theano.config.device)
 from nilearn.image import concat_imgs
 import joblib
 import time
+from nilearn.image import smooth_img
 
 RES_NAME = 'nips3mm_scarcity'
 WRITE_DIR = op.join(os.getcwd(), RES_NAME)
@@ -42,7 +42,7 @@ if not op.exists(WRITE_DIR):
     os.mkdir(WRITE_DIR)
 
 MAX_SAMPLES = 2000
-MAX_REST_SAMPLES = 1000
+MAX_REST_SAMPLES = 100
 MAX_TASK_SAMPLES = 100
 
 ##############################################################################
@@ -87,6 +87,45 @@ AT_niis, AT_labels, AT_subs = joblib.load('preload_AT_3mm')
 AT_X = nifti_masker.transform(AT_niis)
 AT_X = StandardScaler().fit_transform(AT_X)
 print('done :)')
+
+def make_new_noise(masker):
+    # CONST
+    n_random_niis = 1000
+    n_random_foci = 200, 300  # random amount of foci per study
+    fwhm_range = (4, 20)
+
+    print "Inventing NOISE images from Gaussians..."
+    # generate some noise niftis
+    inds = np.where(masker.mask_img_.get_data())  # grid of locations
+    x_inds, y_inds, z_inds = inds  # unpack tuple
+    list_niis = []
+    for inii in xrange(n_random_niis):
+        # if inii % 24 == 0:
+        #     print "%i/%i" % (inii + 1, n_random_niis)
+        nfoci = np.random.randint(*n_random_foci)
+        cur_img = np.zeros(masker.mask_img_.shape)
+        for ifocus in xrange(nfoci):
+            # find random point within mask
+            i = np.random.randint(0, len(x_inds) - 1)
+            x, y, z = x_inds[i], y_inds[i], z_inds[i]
+            # put a dot there
+            if np.random.randint(0, 2):
+                cur_img[x, y, z] = 150
+            else:
+                cur_img[x, y, z] = -150
+
+        # smooth current image of random foci
+        cur_fwhm = np.random.randint(*fwhm_range)
+        new_nii = smooth_img(
+            nib.Nifti1Image(cur_img, masker.mask_img_.get_affine(),
+                header=masker.mask_img_.get_header()), cur_fwhm)
+
+        list_niis.append(new_nii)
+
+    X_rest = masker.transform(list_niis)
+
+    return np.vstack((X_rest, X_rest, X_rest, X_rest,
+                      X_rest, X_rest, X_rest, X_rest))
 
 ##############################################################################
 # define computation graph
@@ -140,8 +179,7 @@ class SSEncoder(BaseEstimator):
         compr_matrix = self.W0s.get_value().T  # currently best compression
         AT_X_compr = np.dot(compr_matrix, AT_X.T).T
         clf = LogisticRegression(penalty='l1')
-        folder = StratifiedShuffleSplit(y=AT_labels, n_iter=5, test_size=0.2,
-                                        random_state=42)
+        folder = StratifiedShuffleSplit(y=AT_labels, n_iter=5, test_size=0.2)
 
         acc_list = []
         prfs_list = []
@@ -338,7 +376,10 @@ class SSEncoder(BaseEstimator):
             # resample + restrict task and rest data
             inds_rest = np.random.randint(0, MAX_REST_SAMPLES, MAX_SAMPLES)
             assert np.bincount(inds_rest).sum() == MAX_SAMPLES
-            X_rest_s.set_value(np.float32(X_rest[inds_rest]), borrow=False)
+
+            X_rest_s.set_value(make_new_noise(nifti_masker), borrow=False)
+            # X_rest_s.set_value(np.float32(X_rest[inds_rest]), borrow=False)
+
             ae_train_samples = MAX_SAMPLES
 
             inds_task = np.random.randint(0, MAX_TASK_SAMPLES, MAX_SAMPLES)
@@ -466,8 +507,7 @@ n_comps = [20]
 # n_comps = [40, 30, 20, 10, 5]
 for n_comp in n_comps:
     # for lambda_param in [0]:
-    #for lambda_param in [0.5]:
-    for lambda_param in [0.25, 0.75, 1]:
+    for lambda_param in [0.5]:
         l1 = 0.1
         l2 = 0.1
         my_title = r'Low-rank LR + AE (combined loss, shared decomp): n_comp=%i L1=%.1f L2=%.1f lambda=%.2f res=3mm spca20RS max%i r%i t%i' % (
@@ -516,11 +556,12 @@ STOP_CALCULATION
 import re
 pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
 dbg_epochs_ = np.load(pkgs[0])
+dbg_epochs_ = np.load(pkgs[0])
 
 d = {
-    'in-sample accuracy': '/*dbg_acc_train*.npy',
-    # 'out-of-sample accuracy': '/*dbg_acc_val_*.npy',
-    # 'accuracy other ds': '/*dbg_acc_other_ds_*.npy',
+    'training accuracy': '/*dbg_acc_train*.npy',
+    'accuracy val': '/*dbg_acc_val_*.npy',
+    'accuracy other ds': '/*dbg_acc_other_ds_*.npy',
     # 'loss ae': '/*dbg_ae_cost_*.npy',
     # 'loss lr': '/*dbg_lr_cost_*.npy',
     # 'loss combined': '/*dbg_combined_cost_*.npy'
@@ -542,7 +583,7 @@ for k, v in d.iteritems():
             if n_comp != n_hidden:
                 continue
 
-            if (task_samples != 1000):
+            if (task_samples == 1000):
                 continue
 
             cur_values = np.load(p)
@@ -579,10 +620,7 @@ for k, v in d.iteritems():
                     k.replace(' ', '_') + '_%icomps.png' % n_comp))
 
 n_comps = [20]
-import re
-pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
-dbg_epochs_ = np.load(pkgs[0])
-pkgs = glob.glob(RES_NAME + '/*dbg_acc_val*.npy')
+pkgs = glob.glob(RES_NAME + '/*dbg_acc_val_*.npy')
 for n_comp in n_comps:  # 
     plt.figure()
     for p in pkgs:
@@ -590,10 +628,10 @@ for n_comp in n_comps:  #
         # n_hidden = int(re.search('comp=(?P<comp>.{1,2,3})_', p).group('comp'))
         n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
         max_samples = int(re.search('max(.{1,4})_', p).group(1))
-        rest_samples = int(re.search('_r(.{1,4})_', p).group(1))
+        rest_samples = int(re.search('_r(.{2,4})_', p).group(1))
         task_samples = int(re.search('_t(.{2,4})dbg', p).group(1))
         
-        if (task_samples != 100) or (rest_samples != 100):
+        if (task_samples == 1000):
             continue
         
         if n_comp != n_hidden:
@@ -610,10 +648,9 @@ for n_comp in n_comps:  #
         cur_label += 'nrest%i' % rest_samples
         cur_label += '/'
         cur_label += 'ntask=%i' % task_samples
-        npoints = min(len(dbg_acc_val_), len(dbg_epochs_))
         plt.plot(
-            dbg_epochs_[:npoints],
-            dbg_acc_val_[:npoints],
+            dbg_epochs_,
+            dbg_acc_val_,
             label=cur_label)
     plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss')
     plt.legend(loc='lower right', fontsize=9)
@@ -1120,257 +1157,3 @@ for n_comp in [20]: # [5, 20, 50, 100]:
     plt.tight_layout()
     out_path2 = op.join(WRITE_DIR, 'f1_bars_comp=%i.png' % n_comp)
     plt.savefig(out_path2)
-
-# final scarcity plot
-pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
-dbg_epochs_ = np.load(pkgs[0])
-
-k, v = ('out-of-sample performance', '/*_n_comp=%i*r%i_t%i*dbg_acc_val_*.npy')
-n_comp = 20
-path_main = 'nips3mm_scarcity'
-
-plt.close('all')
-plt.figure()
-cols = ('#2998FF', '#0068C4', '#004B8D',
-        '#EFC94C', '#E27A3F', '#DF4949')
-for (ntask, nrest), col in zip([[1000, 1500], [1000, 1000], [1000, 500],
-                                [100, 150], [100, 100], [100, 50],], cols):
-    pkgs = glob.glob(RES_NAME + (v % (n_comp, nrest, ntask)))
-    print(pkgs)
-
-    cur_values = np.load(pkgs[0])
-    cur_label = '%i : %i' % (ntask, nrest)
-
-    plt.plot(
-        dbg_epochs_,
-        cur_values,
-        label=cur_label, color=col, linewidth=2.5)
-
-plt.title('Semi-supervision in data-rich and data-scarce scenarios')
-plt.yticks(np.linspace(0., 1., 11))
-plt.ylabel(k)
-plt.xlabel('epochs')
-plt.grid(True)
-plt.ylim(0., 1.05)
-plt.axhline(1. / 18, xmin=0, xmax=1, color='#696969', linewidth=2.5,
-            label='chance', linestyle='--')
-plt.show()
-plt.legend(loc='lower right', fontsize=11,
-           ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
-plt.savefig(op.join(WRITE_DIR,
-            k.replace(' ', '_') + '_%icomps_scarcities.png' % n_comp))
-
-# pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
-# dbg_epochs_ = np.load(pkgs[0])
-# 
-# k, v = ('out-of-sample performance', '/*_n_comp=%i*r%i_t%i*dbg_acc_val_*.npy')
-# n_comp = 20
-# path_main = 'nips3mm_scarcity'
-
-# bars (varying nrest)
-my_fs = 13
-k, v = ('out-of-sample performance', '/*_n_comp=%i*_lambda=0.50*r%i_t%i*dbg_acc_val_*.npy')
-# plt.close('all')
-cols = ('#EFC94C', '#E27A3F', '#DF4949',
-        '#2998FF', '#0068C4', '#004B8D')
-width = 0.25
-x_pos = [0]
-x_labels = ['chance']
-plt.figure()        
-handle = plt.bar(x_pos[-1], 1. / 18, width=width, color='#696969')
-
-for (ntask, nrest), col in zip([[100, 50], [100, 100], [100, 150],
-                                [1000, 500], [1000, 1000], [1000, 1500],], cols):
-    pkgs = glob.glob(RES_NAME + (v % (n_comp, nrest, ntask)))
-    print(pkgs)
-    if len(x_pos) == 1 or len(x_pos) == 4:
-        x_pos += [width * 1.5 + x_pos[-1]]
-    else:
-        x_pos += [width + x_pos[-1]]
-
-    cur_values = np.load(pkgs[0])
-    x_labels += ['%i : %i' % (ntask, nrest)]
-
-    plt.bar(
-        x_pos[-1],
-        cur_values[-1], width=width,
-        color=col)
-
-plt.title('Varying amount of rest structure', fontsize=my_fs + 2)
-# plt.legend(loc='lower right', fontsize=10,
-#            ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
-plt.yticks(np.linspace(0., 1., 11), fontsize=my_fs)
-plt.ylabel(k, fontsize=my_fs)
-plt.xlabel('task-maps : rest-maps', fontsize=my_fs)
-plt.xticks(np.array(x_pos) + (width / 2), x_labels, rotation=35,
-           fontsize=my_fs)
-plt.grid(True)
-plt.show()
-plt.tight_layout()
-plt.savefig(op.join(WRITE_DIR,
-            k.replace(' ', '_') + '_%icomps_scarcities_nrest.png' % n_comp))
-
-# bars (varying lambda)
-plt.figure()
-# plt.close('all')
-cols = ('#FFF0A5', '#EFC94C', '#E27A3F', '#DF4949',
-        '#79C7D9', '#2998FF', '#0068C4', '#004B8D')
-width = 0.25
-x_pos = [0]
-x_labels = ['chance']
-handle = plt.bar(x_pos[-1], 1. / 18, width=width, color='#696969')
-
-v = '/Low-rank_LR_AE_(combined_loss,_shared_decomp)_n_comp=20_L1=0.1_L2=0.1_lambda=%.2f_res=3mm_spca20RS_max2000_r%i_t%idbg_acc_val_.npy'
-
-for (nmaps, cur_lmb), col in zip([[100, 0.25], [100, 0.5], [100, 0.75], [100, 1],
-                                  [1000, 0.25], [1000, 0.5], [1000, 0.75], [1000, 1]],
-                                cols):
-    pkgs = glob.glob(RES_NAME + (v % (cur_lmb, nmaps, nmaps)))
-    print(pkgs)
-    if len(x_pos) == 1 or len(x_pos) == 5:
-        x_pos += [width * 1.5 + x_pos[-1]]
-    else:
-        x_pos += [width + x_pos[-1]]
-
-    cur_values = np.load(pkgs[0])
-    x_labels += ['$%.2f$' % cur_lmb]
-
-    plt.bar(
-        x_pos[-1],
-        cur_values[-1], width=width,
-        color=col)
-
-plt.title('Varying influence of rest structure', fontsize=my_fs + 2)
-# plt.legend(loc='lower right', fontsize=10,
-#            ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
-plt.yticks(np.linspace(0., 1., 11), fontsize=my_fs)
-plt.ylabel(k, fontsize=my_fs)
-plt.xlabel('$\lambda$', fontsize=my_fs + 2)
-plt.xticks(np.array(x_pos) + (width / 2), x_labels, rotation=35,
-           fontsize=my_fs)
-plt.grid(True)
-plt.show()
-plt.tight_layout()
-plt.savefig(op.join(WRITE_DIR,
-            k.replace(' ', '_') + '_%icomps_scarcities_lmb.png' % n_comp))
-
-# varying lambda (line plot)
-plt.figure()
-# plt.close('all')
-cols = ('#FFF0A5', '#EFC94C', '#E27A3F', '#DF4949',
-        '#79C7D9', '#2998FF', '#0068C4', '#004B8D')
-v = '/Low-rank_LR_AE_(combined_loss,_shared_decomp)_n_comp=20_L1=0.1_L2=0.1_lambda=%.2f_res=3mm_spca20RS_max2000_r%i_t%idbg_acc_%s_.npy'
-my_scores = np.zeros((2, 2, 4))
-for i_set, set_name in ['train', 'val']:
-    for i_scenario, nmaps in enumerate([100, 1000]):
-        for i_lmb, lmb in enumerate([0.25, 0.5, 0.75, 1]):
-            pkgs = glob.glob(RES_NAME + (v % (cur_lmb, nmaps, nmaps, set_name)))
-            print(pkgs)
-            cur_score = np.load(pkgs[0])
-            my_scores[i_set, i_scenario, i_lmb] = cur_score
-
-
-plt.title('Varying influence of rest structure', fontsize=my_fs + 2)
-# plt.legend(loc='lower right', fontsize=10,
-#            ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
-plt.yticks(np.linspace(0., 1., 11), fontsize=my_fs)
-plt.ylabel(k, fontsize=my_fs)
-plt.xlabel('$\lambda$', fontsize=my_fs + 2)
-plt.xticks(np.array(x_pos) + (width / 2), x_labels, rotation=35,
-           fontsize=my_fs)
-plt.grid(True)
-plt.show()
-plt.tight_layout()
-plt.savefig(op.join(WRITE_DIR,
-            k.replace(' ', '_') + '_%icomps_scarcities_lmb.png' % n_comp))
-
-# final scarcity plot 2
-pkgs = glob.glob(RES_NAME + '/*dbg_epochs*.npy')
-dbg_epochs_ = np.load(pkgs[0])
-
-k, v = ('out-of-sample performance', '/*_n_comp=%i*r%i_t%idbg_acc_val_*.npy')
-n_comp = 20
-path_main = 'nips3mm_scarcity'
-
-plt.close('all')
-plt.figure()
-cols = ('#2998FF', '#0068C4', '#004B8D', '#000000',
-        '#EFC94C', '#E27A3F', '#DF4949', '#696969')
-for (ntask, nrest), col, lmb in zip([[1000, 1500], [1000, 1000], [1000, 500], [1000, 1],
-                                    [100, 150], [100, 100], [100, 50], [100, 1]],
-                                    cols,
-                                    [0.5, 0.5, 0.5, 1.0] * 2):
-    pkgs = glob.glob(RES_NAME + (v % (n_comp, nrest, ntask)))
-    print(pkgs)
-
-    cur_values = np.load(pkgs[0])
-    if nrest == 1:
-        cur_label = '%i : %i ($\lambda=%.2f$)' % (ntask, 0, lmb)
-    else:
-        cur_label = '%i : %i ($\lambda=%.2f$)' % (ntask, nrest, lmb)
-
-    plt.plot(
-        dbg_epochs_,
-        cur_values,
-        label=cur_label, color=col, linewidth=2.5)
-
-plt.title('Semi-supervision in data-rich and data-scarce scenarios')
-plt.legend(loc='lower right', fontsize=11,
-           ncol=1, shadow=True, title="task-maps : rest-maps", fancybox=True)
-plt.yticks(np.linspace(0., 1., 11))
-plt.ylabel(k)
-plt.xlabel('epochs')
-plt.ylim(0., 1.05)
-plt.grid(False)
-plt.show()
-plt.savefig(op.join(WRITE_DIR,
-            k.replace(' ', '_') + '_%icomps_scarcities2.png' % n_comp))
-            
-# final scarcity plot 3
-n_comps = [20]
-nrests = []
-naccs = []
-pkgs = glob.glob(RES_NAME + '/*dbg_acc_val_*.npy')
-for n_comp in n_comps:  # 
-    plt.figure()
-    for p in pkgs:
-        lambda_param = np.float(re.search('lambda=(.{4})', p).group(1))
-        # n_hidden = int(re.search('comp=(?P<comp>.{1,2,3})_', p).group('comp'))
-        n_hidden = int(re.search('comp=(.{1,3})_', p).group(1))
-        max_samples = int(re.search('max(.{1,4})_', p).group(1))
-        rest_samples = int(re.search('_r(.{1,4})_', p).group(1))
-        task_samples = int(re.search('_t(.{2,4})dbg', p).group(1))
-        
-        if (task_samples != 100) or (rest_samples == 1) or (rest_samples == 200):
-            continue
-        
-        if n_comp != n_hidden:
-            continue
-
-        print rest_samples
-        print p
-
-        dbg_acc_val_ = np.load(p)
-
-        # naccs.append(np.max(dbg_acc_val_))
-        naccs.append(dbg_acc_val_[-1])
-        nrests.append(rest_samples)
-
-    nrests = np.array(nrests)
-    naccs = np.array(naccs)
-    inds = np.argsort(nrests)
-    plt.plot(
-        nrests[inds],
-        naccs[inds])
-
-    # plt.title('Low-rank LR+AE L1=0.1 L2=0.1 res=3mm combined-loss')
-    plt.legend(loc='lower right', fontsize=9)
-    plt.yticks(np.linspace(0., 1., 11))
-    plt.xticks(nrests[inds], nrests[inds])
-    plt.ylabel('validation set accuracy')
-    plt.ylim(0., 1.05)
-    plt.xlabel('nrest')
-    plt.grid(True)
-    plt.show()
-    plt.savefig(op.join(WRITE_DIR,
-                'scarcities_ncomp=%i_100.png' % n_comp))

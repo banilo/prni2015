@@ -58,8 +58,8 @@ High-Dimensional Neuroimaging Data}
 \newcommand{\suggestadd}[1]{{\color{blue} #1}}
 \newcommand{\suggestremove}[1]{{\color{red} \sout{#1}}}
 
-%\nipsfinalcopy % Uncomment for camera-ready version
-\nipsfinalfalse
+% \nipsfinalcopy % Uncomment for camera-ready version
+\nipsfinaltrue
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
@@ -77,8 +77,8 @@ biology in ever-increasing datasets.
 Existing neuroimaging methods typically perform either discovery of unknown
 neural structure or testing of neural structure associated with mental tasks.
 %
-However, testing hypotheses on the neural correlates of
-larger mental task sets
+However, testing hypotheses on the neural correlates underlying
+larger sets of mental tasks
 necessitates adequate representations for the observations.
 %
 We therefore propose to blend
@@ -480,7 +480,7 @@ logistic regression are interpolated in the common loss function
 In so doing, we search for the combined model parameters
 $\theta=\{\mathbf{V_0,V_1,c_0, c_1, b_0, b_1}\}$
 with respect to the (unsupervised) reconstruction error and the
-(supervised) task classification.
+(supervised) task detection.
 ${\mathcal{L_{AE}}}$ is devided by ${N_{X_{rest}}}$ to equilibrate both
 loss terms to the same order of magnitude.
 \(\Omega(\theta)\) represents an ElasticNet-type regularization
@@ -583,8 +583,7 @@ and learning classification models in the (labeled) second half
 by ordinary logistic regression.
 %
 PCA reduced the dimensionality of the task data by
-finding orthogonal network components using a change of basis
-(whitening).
+finding orthogonal network components (whitening of the data).
 %
 SPCA separated the task-related BOLD signals into
 network components with few regions by
@@ -597,7 +596,7 @@ $\alpha=1$).
 ICA performed iterative blind source separation
 by a parallel FASTICA implementation (200 maximum iterations,
 per-iteration tolerance of 0.0001,
-initialized by random mixing matrix, whitening).
+initialized by random mixing matrix, whitening of the data).
 %
 AE found a code of latent representations by optimizing projection
 into a bottleneck
@@ -607,11 +606,11 @@ The second half of the task data was projected onto the
 latent components discovered in its first half.
 Only the ensuing component loadings were submitted to ordinary
 logistic regression
-(one hidden layer, $\ell_1=0.1$, $\ell_2=0.1$, 500 iterations).
+(no hidden layer, $\ell_1=0.1$, $\ell_2=0.1$, 500 iterations).
 %
 These serial two-step approaches were
 compared against parallel decomposition and classification by SSFLogReg
-(two hidden layers, $\lambda=1$, $\ell_1=0.1$, $\ell_2=0.1$,
+(one hidden layers, $\lambda=1$, $\ell_1=0.1$, $\ell_2=0.1$,
 500 iterations).
 Importantly, all trained classification models were tested
 on a large, unseen test set (20\% of data) in the present analyses.
@@ -722,7 +721,7 @@ beyond the supervised problem at hand.
 \paragraph{Individual effects of dimensionality reduction and rest data.}
 We first quantified the impact of introducing a bottleneck layer
 disregarding the autoencoder.
-To this end, ordinary logstic regression was juxtaposed
+To this end, ordinary logistic regression was juxtaposed
 with SSFLogReg with $\lambda=1$.
 For this experiment, we increased the difficulty of the classification problem
 by including data from all 38 HCP tasks.
@@ -773,17 +772,13 @@ and data-rich settings ($n=20$, $\ell_1=0.1$, $\ell_2=0.1$).
 At the beginning of every epoch,
 2000 task and 2000 rest maps were drawn with replacement
 from same amounts of task and rest maps.
-In frequently encountered data-scarce scenarios,
-both training and validation
-scores improved as we depart from the most supervised model ($lambda=1$).
+In data-scarce scenarios (frequently encountered by neuroimaging practitioners),
+the out-of-sample scores improve
+as we depart from the most supervised model ($lambda=1$).
 This suggests that the autoencoder of SSFLogReg does not
 behave like a classical regularization but more
 like transfer learning.
-In data-rich scenarios, was also present, although less pronounced.
-
-but not in data-rich settings ($\approx{1000}$ labeled samples),
-the repertoire of rest structure modulated model performance
-(Figure \ref{fig_semisup}).
+In data-rich scenarios, we observed the same trend to be apparent.
 
 \begin{figure}[h]
 \begin{centering}
@@ -797,7 +792,7 @@ data-rich (1000 task and 1000 task maps, \textit{cold color}) scenarios.
 Gradient descent was performed on 2000 task and 2000 rest maps.
 At the begining of each epoch, these were drawn with replacement
 from a pool of 100 or 1000 different task and rest maps, respectively.
-Especially the \textit{cold} curve
+Especially the \textit{hot} curve
 suggests a ``transfer learning''-type effect.
 Chance is at 5,6\%.
 }
@@ -899,7 +894,7 @@ after the bottleneck was not advantageous.
 Finally, imposing either $i)$ only $\ell_1$ or 
 $k)$ only $\ell_2$ penalty terms
 was disadvantageous in all tested cases.
-Thiss favored ElasticNet regularization chosen in the above analyses.
+This favored ElasticNet regularization chosen in the above analyses.
 
 \section{Discussion and Conclusion}
 % Conceptual recap+gain of current paper
