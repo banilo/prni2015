@@ -66,7 +66,10 @@ High-Dimensional Neuroimaging Data}
 
 \author{Danilo Bzdok, Michael Eickenberg, Olivier Grisel,
   Bertrand Thirion,
-  Ga\"el Varoquaux \\\textbf{\textit{email:} }firstname.lastname@inria.fr}
+  Ga\"el Varoquaux\\
+  INRIA, Parietal team, Saclay, France\\
+  CEA, Neurospin, Gif-sur-Yvette, France\\
+  firstname.lastname@inria.fr}
 
 \maketitle
 
@@ -164,7 +167,8 @@ of easily acquired resting-state data \cite{biswaldiscovery}.
 These may allow better discovery of
 the manifold of brain states
 due to the high task-rest similarities of neural activity patterns,
-as observed using ICA \cite{smith2009}.
+as observed using ICA \cite{smith2009}
+and linear correlation \cite{cole14}.
 % XXX: you don't discuss the absence of information sharing across tasks / cognitions, i.e. the multi-task aspect of your work.
 
 Both these neurobiological properties can be conjointly exploited in an
@@ -182,7 +186,7 @@ for the prediction problem at hand.
 %
 Autoencoders suggest themselves because they can emulate
 variants of most unsupervised learning algorithms,
-including PCA, SPCA, and ICA \cite{hinton06}.
+including PCA, SPCA, and ICA \cite{hertz1991introduction, hinton06}.
 \begin{wrapfigure}{r}{0.40\textwidth}
   \centering
   %\captionsetup{labelformat=nonumber}
@@ -281,8 +285,8 @@ We therefore contribute a computational framework that
 1) analyzes many problems simultaneously
 (thus finds shared representations by ``multi-task learning'')
 and
-2) exploits unlabeled data,
-as they span a space of meaningful configurations.
+2) exploits unlabeled data
+(since they span a space of meaningful configurations).
 
 \section{Methods}
 %
@@ -291,7 +295,7 @@ As the currently biggest openly-accessible reference dataset,
 we chose resources from the Human Connectome Project (HCP)
 \cite{barch2013}.
 Neuroimaging task data with labels of ongoing cognitive processes
-were drawn from 500 unrelated,
+were drawn from 500
 healthy HCP participants (cf. Appendix for details on datasets).
 18 HCP tasks 
 were selected that are known to elicit reliable neural activity
@@ -388,7 +392,7 @@ The model parameters $\mathbf{W_0, b_0, b_1}$ are found by
 minimizing the expected squared reconstruction error
 \begin{equation}
   \mathbb E\left[{\mathcal{L_{AE}}}(\mathbf{x})\right] = %
-  \mathbb E\left[\| \mathbf{x} - \mathbf{W_1}(\mathbf{W_0}\mathbf{x} + \mathbf{b_0}) + \mathbf{b_1}) \|^2\right].
+  \mathbb E\left[\| \mathbf{x} - (\mathbf{W_1}(\mathbf{W_0}\mathbf{x} + \mathbf{b_0}) + \mathbf{b_1}) \|^2\right].
 \end{equation}
 
 %with \(f_{AE}(\mathbf x) = %
@@ -453,12 +457,12 @@ bias vectors.
 The loss function is given by
 \begin{equation}
     \mathbb E\left[{\mathcal{L_{LR}}}(\mathbf{x, y})\right] \approx %
-\frac{1}{N_{X_{task}}} \sum_{k=0}^{N_{X_{task}}} \log(P(Y=y^{(k)}|\mathbf{x^{(k)}; V_0, V_1, c_0, c_1}).
+\frac{1}{N_{X_{task}}} \sum_{k=0}^{N_{X_{task}}} \log(P(Y=y^{(k)}|\mathbf{x^{(k)}; V_0, V_1, c_0, c_1})).
 \label{eq:lr_loss}
 \end{equation}
 
 \paragraph{Layer combination.}
-Importantly, the optimization problem of the linear autoencoder
+The optimization problem of the linear autoencoder
 and the factored logistic regression
 are linked in two ways. First, their transformation matrices mapping from
 input to the latent space are tied
@@ -473,7 +477,7 @@ logistic regression are interpolated in the common loss function
 % XXX Michael: In resolving conflict I opted for my change. Feel free to revert if that was intended.
 \begin{equation}
 {\mathcal{L}}(\theta, \lambda) = \lambda {\mathcal{L_{LR}}}
-+ (1-\lambda)\frac{1}{N_{X_{rest}}} {\mathcal{L_{AE}}} + \Omega(\theta).
++ (1-\lambda)\frac{1}{N_{X_{rest}}} {\mathcal{L_{AE}}} + \Omega.
   \label{eq:loss_equ}
 \end{equation}
 
@@ -483,7 +487,7 @@ with respect to the (unsupervised) reconstruction error and the
 (supervised) task detection.
 ${\mathcal{L_{AE}}}$ is devided by ${N_{X_{rest}}}$ to equilibrate both
 loss terms to the same order of magnitude.
-\(\Omega(\theta)\) represents an ElasticNet-type regularization
+\(\Omega\) represents an ElasticNet-type regularization
 that combines $\ell_1$ and $\ell_2$ penalty terms.
 %$\forall p \in \theta$.
 
@@ -568,8 +572,8 @@ differentiation of symbolic computation graphs
 \cite{bastien2012theano, bergstra2010theano}.
 All Python scripts that generated the results are
 accessible online for reproducibility and reuse
-(\url{http://github.com/anonymous/anonymous}).
-% (url{http://github.com/banilo/nips2015}).
+% (\url{http://github.com/anonymous/anonymous}).
+(\url{http://github.com/banilo/nips2015}).
 
 \section{Experimental Results}
 \paragraph{Serial versus parallel structure discovery and classification.}
@@ -631,10 +635,10 @@ This effect was particularly pronounced when assuming few hidden dimensions.
  \begin{tabular}{l|c|c|c|c|c}
  \hline
  \textit{n}               & PCA + LogReg   & SPCA + LogReg  & ICA + LogReg  & AE + LogReg    & SSFLogReg            \\ \hline
- \multicolumn{1}{l|}{5}   & 45,1 \%        & 32,2 \%        & 37,5 \%       & 44,2 \%        & \textbf{95,7\%}      \\
- \multicolumn{1}{l|}{20}  & 78,1 \%        & 78,2 \%        & 81,0 \%       & 63,2 \%        & \textbf{97,3\%}      \\
- \multicolumn{1}{l|}{50}  & 81,7 \%        & 84,0 \%        & 84,2 \%       & 77,0 \%        & \textbf{97,6\%}      \\
- \multicolumn{1}{l|}{100} & 81,3 \%        & 82,2 \%        & 87,3 \%       & 76,6 \%        & \textbf{97,4\%}      \\ \hline
+ \multicolumn{1}{l|}{5}   & 45.1 \%        & 32.2 \%        & 37.5 \%       & 44.2 \%        & \textbf{95.7\%}      \\
+ \multicolumn{1}{l|}{20}  & 78.1 \%        & 78.2 \%        & 81.0 \%       & 63.2 \%        & \textbf{97.3\%}      \\
+ \multicolumn{1}{l|}{50}  & 81.7 \%        & 84.0 \%        & 84.2 \%       & 77.0 \%        & \textbf{97.6\%}      \\
+ \multicolumn{1}{l|}{100} & 81.3 \%        & 82.2 \%        & 87.3 \%       & 76.6 \%        & \textbf{97.4\%}      \\ \hline
  \end{tabular}
  }
  \vspace{-0.2cm}
@@ -659,7 +663,7 @@ only the unsupervised layer of the estimator is optimized.
 At each epoch (i.e., iteration over the data),
 the out-of-sample performance of the trained classifier
 was assessed on 20\% of unseen HCP data.
-Additionally, the ``out-of-study performance'' of
+Additionally, the ``out-of-study'' performance of
 the learned decomposition ($\mathbf{W_0}$)
 was assessed by using it as dimensionality reduction of an
 independent labeled dataset (i.e., ARCHI) and conducting ordinary
@@ -673,16 +677,17 @@ logistic regression on the ensuing component loadings.
   \hline
                             & \multicolumn{5}{c|}{\textit{n = 5}}                                                                                                                                                 & \multicolumn{5}{c|}{\textit{n = 20}}                                                                                                                                                      & \multicolumn{5}{c}{\textit{n = 100}}                                                                           \\ \hline
   \textit{}                 & \multicolumn{1}{l}{$\lambda=0$}    & \multicolumn{1}{l}{$\lambda=0.25$} & \multicolumn{1}{l}{$\lambda=0.5$} & \multicolumn{1}{l}{$\lambda=0.75$} & \multicolumn{1}{l|}{$\lambda=1$} & \multicolumn{1}{l}{$\lambda=0$}  & \multicolumn{1}{l}{$\lambda=0.25$}   & \multicolumn{1}{l}{$\lambda=0.5$}   & \multicolumn{1}{l}{$\lambda=0.75$}   & \multicolumn{1}{l|}{$\lambda=1$}   & $\lambda=0$      & $\lambda=0.25$   & $\lambda=0.5$    & $\lambda=0.75$   & \multicolumn{1}{l}{$\lambda=1$}    \\ \hline
-  Out-of-sample\\accuracy   & \textit{6,0\%}                     & 88,9\%                             & 95,1\%                            & \textbf{96,5\%}                    & 95,7\%                           & \textit{5,5\%}                   & 97,4\%                               & \textbf{97,8\%}                     & 97,3\%                               & 97,3\%                             & \textit{6,1\%}   & 97,2\%           & 97,0\%           & \textbf{97,8\%}  & 97,4\%                             \\
-  Precision (mean)          & \textit{5,9\%}                     & 87,0\%                             & 94,9\%                            & \textbf{96,3\%}                    & 95,4\%                           & \textit{5,1\%}                   & \textbf{97,4\%}                      & 97,1\%                              & 97,0\%                               & 97,0\%                             & \textit{5,9\%}   & 96,9\%           & 96,5\%           & \textbf{97,5\%}  & 96,9\%                             \\
-  Recall (mean)             & \textit{5,6\%}                     & 88,3\%                             & 95,2\%                            & \textbf{96,6\%}                    & 95,7\%                           & \textit{4,6\%}                   & \textbf{97,5\%}                      & 97,5\%                              & 97,4\%                               & 97,4\%                             & \textit{7,2\%}   & 97,2\%           & 97,2\%           & \textbf{97,9\%}  & 97,4\%                             \\
-  F1 score (mean)           & \textit{4,1\%}                     & 86,6\%                             & 94,9\%                            & \textbf{96,4\%}                    & 95,4\%                           & \textit{3,8\%}                   & \textbf{97,4\%}                      & 97,2\%                              & 97,1\%                               & 97,1\%                             & \textit{5,3\%}   & 97,0\%           & 96,7\%           & \textbf{97,7\%}  & 97,2\%                             \\ \hline
-  Out-of-study\\accuracy    & \textit{39,4\%}                    & 60,8\%                             & 54,3\%                            & 60,7\%                             & \textbf{62,9\%}                  & \textit{77,0\%}                  & 79,7\%                               & \textbf{81,9\%}                     & 79,7\%                               & 79,4\%                             & 79,2\%           & \textbf{82,2\%}  & 81,7\%           & 81,3\%           & \textit{75,8\%}                    \\ \hline
+  Out-of-sample\\accuracy   & \textit{6.0\%}                     & 88.9\%                             & 95.1\%                            & \textbf{96.5\%}                    & 95.7\%                           & \textit{5.5\%}                   & 97.4\%                               & \textbf{97.8\%}                     & 97.3\%                               & 97.3\%                             & \textit{6.1\%}   & 97.2\%           & 97.0\%           & \textbf{97.8\%}  & 97.4\%                             \\
+  Precision (mean)          & \textit{5.9\%}                     & 87.0\%                             & 94.9\%                            & \textbf{96.3\%}                    & 95.4\%                           & \textit{5.1\%}                   & \textbf{97.4\%}                      & 97.1\%                              & 97.0\%                               & 97.0\%                             & \textit{5.9\%}   & 96.9\%           & 96.5\%           & \textbf{97.5\%}  & 96.9\%                             \\
+  Recall (mean)             & \textit{5.6\%}                     & 88.3\%                             & 95.2\%                            & \textbf{96.6\%}                    & 95.7\%                           & \textit{4.6\%}                   & \textbf{97.5\%}                      & 97.5\%                              & 97.4\%                               & 97.4\%                             & \textit{7.2\%}   & 97.2\%           & 97.2\%           & \textbf{97.9\%}  & 97.4\%                             \\
+  F1 score (mean)           & \textit{4.1\%}                     & 86.6\%                             & 94.9\%                            & \textbf{96.4\%}                    & 95.4\%                           & \textit{3.8\%}                   & \textbf{97.4\%}                      & 97.2\%                              & 97.1\%                               & 97.1\%                             & \textit{5.3\%}   & 97.0\%           & 96.7\%           & \textbf{97.7\%}  & 97.2\%                             \\ \hline
+  Reconstr. error (norm.)   & 0.76                               & 0.85                               & 0.87                              & 1.01                               & 1.79                             & 0.64                             & 0.67                                 & 0.69                                & 0.77                                 & 1.22                               & 0.60             & 0.65             & 0.68             & 0.73             & 1.08                               \\ \hline
+  Out-of-study\\accuracy    & \textit{39.4\%}                    & 60.8\%                             & 54.3\%                            & 60.7\%                             & \textbf{62.9\%}                  & \textit{77.0\%}                  & 79.7\%                               & \textbf{81.9\%}                     & 79.7\%                               & 79.4\%                             & 79.2\%           & \textbf{82.2\%}  & 81.7\%           & 81.3\%           & \textit{75.8\%}                    \\ \hline
   \end{tabular}
 }
 \vspace{-0.2cm}
  \caption{\textbf{Performance of SSFLogReg across model parameter choices.}
- Chance is at 5,6\%.
+ Chance is at 5.6\%.
  }
   \label{table_two}
 \end{table}
@@ -693,6 +698,10 @@ First, the most supervised estimator ($\lambda=1$) achieved in no
 instance the best accuracy, precision, recall, or f1 scores on HCP data.
 Classification by SSFLogReg is therefore facilitated by
 imposing structure from the unlabeled rest data.
+Confirmed by the normalized reconstruction error
+($\mathbf{E} = \|x-\hat{x}\| / \|x\|$),
+little weight on the supervised term is sufficient for good model performance
+while keeping $\mathbf{E}$ low and task-map decomposition rest-like. 
 %
 Second, the higher the number of latent components $n$,
 the higher the out-of-study performance with small values of $\lambda$.
@@ -702,7 +711,7 @@ results in more effective feature representations in unrelated task data.
 Third, for $n=20$ and $100$ (but not $5$) the purely rest-data-trained
 decomposition matrix ($\lambda=0$) resulted in
 noninferior out-of-study performance
-of 77,0\% and 79,2\%,
+of 77.0\% and 79.2\%,
 respectively (Table \ref{table_two}).
 This confirms that guiding model learning by task-unrelated structure
 extracts features of general relevance
@@ -722,7 +731,7 @@ beyond the supervised problem at hand.
 We first quantified the impact of introducing a bottleneck layer
 disregarding the autoencoder.
 To this end, ordinary logistic regression was juxtaposed
-with SSFLogReg with $\lambda=1$.
+with SSFLogReg at $\lambda=1$.
 For this experiment, we increased the difficulty of the classification problem
 by including data from all 38 HCP tasks.
 Indeed, increased class separability in component space,
@@ -733,8 +742,8 @@ $\approx{17\%}$ (Figure \ref{fig_dimred}).
 Notably,
 the cognitive tasks on reward and punishment processing
 are among the least predicted with ordinary but well predicted with
-SSFLogReg
-(tasks 3 and 4 in Figure \ref{fig_dimred}).
+low-rank logistic regression
+(tasks 1 and 2 in Figure \ref{fig_dimred}).
 These experimental conditions have been reported to exhibit
 highly similar neural activity patterns in
 GLM analyses of that dataset \cite{barch2013}.
@@ -746,10 +755,9 @@ be successfully captured by brain-network modelling.
 \begin{centering}
 \includegraphics[width=1.00\textwidth]{figures/accuracies.pdf}
 \end{centering}
-\vspace{-0.5cm}
+\vspace{-0.6cm}
 \caption{\textbf{Effect of bottleneck in a 38-task classificaton problem}
-Depicts the f1 score for each of 38 class predictions (chance is at $2,6\%$)
-sorted from lowest to highest.
+Depicts the f1 prediction scores for each of 38 psychological tasks.
 Multinomial logistic regression operating in voxel space (\textit{blue bars})
 was compared to 
 SSFLogReg operating in $20$
@@ -757,16 +765,18 @@ SSFLogReg operating in $20$
 latent modes (\textit{grey bars}).
 Autoencoder or rest data were not used for these analyses
 ($\lambda=1$).
-Ordinary logistic regression yielded 77,7\% accuracy out of sample, while
-SSFLogReg scored at 94,4\% ($n=20$) and 94,2\% ($n=100$).
+Ordinary logistic regression yielded 77.7\% accuracy out of sample, while
+SSFLogReg scored at 94.4\% ($n=20$) and 94.2\% ($n=100$).
 Hence, compressing the voxel data into a component space for classification
 achieves higher task separability.
+Chance is at $2,6\%$.
 }
 \label{fig_dimred}
 \end{figure}
 
 % rest effect
-We then contemplated the impact of rest structure by modulating
+We then contemplated the impact of rest structure (Figure \ref{fig_semisup})
+by modulating
 its influence ($\lambda=0.25, 0.5, 0.75$) in data-scarce
 and data-rich settings ($n=20$, $\ell_1=0.1$, $\ell_2=0.1$).
 At the beginning of every epoch,
@@ -774,27 +784,22 @@ At the beginning of every epoch,
 from same amounts of task and rest maps.
 In data-scarce scenarios (frequently encountered by neuroimaging practitioners),
 the out-of-sample scores improve
-as we depart from the most supervised model ($lambda=1$).
-This suggests that the autoencoder of SSFLogReg does not
-behave like a classical regularization but more
-like transfer learning.
+as we depart from the most supervised model ($\lambda=1$).
 In data-rich scenarios, we observed the same trend to be apparent.
 
 \begin{figure}[h]
 \begin{centering}
 \includegraphics[width=0.55\textwidth]{figures/semisup.png}
-\vspace{-0.5cm}
+\vspace{-0.55cm}
 \caption{\textbf{Effect of rest structure}
 Model performance of SSFLogReg ($n=20$, $\ell_1=0.1$, $\ell_2=0.1$)
 for different choices of $\lambda$ in
 data-scarce (100 task and 100 rest maps, \textit{hot color}) and
-data-rich (1000 task and 1000 task maps, \textit{cold color}) scenarios.
+data-rich (1000 task and 1000 rest maps, \textit{cold color}) scenarios.
 Gradient descent was performed on 2000 task and 2000 rest maps.
 At the begining of each epoch, these were drawn with replacement
 from a pool of 100 or 1000 different task and rest maps, respectively.
-Especially the \textit{hot} curve
-suggests a ``transfer learning''-type effect.
-Chance is at 5,6\%.
+Chance is at 5.6\%.
 }
 \end{centering}
 \label{fig_semisup}
@@ -832,9 +837,9 @@ good classification performance.
 %
 \begin{figure}
 \begin{centering}
-\includegraphics[width=0.98\textwidth]{figures/figure_weights_perc75.png}
+\includegraphics[width=0.98\textwidth]{figures/figure_weights_perc75.jpg}
 \end{centering}
-\vspace{-0.1cm}
+\vspace{-0.25cm}
 \caption{\textbf{Classification weight maps}
 The voxel predictors corresponding to 5 exemplary
 (of 18 total) psychological tasks (\textit{rows})
@@ -885,14 +890,14 @@ probably due to sample size limits.
 Further, $f)$ ``pretraining'' of the bottleneck $\mathbf{W_0}$
 (i.e., non-random initialization) by 
 either corresponding PCA, SPCA or ICA loadings did not exhibit improved accuracies,
-neither did $h)$ autoencoder pretraining.
+neither did $g)$ autoencoder pretraining.
 %
 Moreover,
 introducing an additional $h)$ overcomplete layer (100 units)
 after the bottleneck was not advantageous.
 %
 Finally, imposing either $i)$ only $\ell_1$ or 
-$k)$ only $\ell_2$ penalty terms
+$j)$ only $\ell_2$ penalty terms
 was disadvantageous in all tested cases.
 This favored ElasticNet regularization chosen in the above analyses.
 
@@ -909,7 +914,7 @@ can be viewed as transforming a
 ``multi-class classification problem''
 into a ``multi-task learning problem''.
 %
-The higher generalization accuracy and feature recovery, comparing to
+The higher generalization accuracy and support recovery, comparing to
 ordinary logistic regression, hold potential
 for adoption in various neuroimaging analyses.
 Besides increased performance, these models are more interpretable by
@@ -960,13 +965,16 @@ high-throughput genomics \cite{need2010gwas}.
 The biggest socioeconomic potential may
 lie in across-hospital clinical studies that
 predict disease trajectories and drug responses
-in psychiatric/neurological populations
-\cite{frackowiak2015future, gustav2011cost}.
+in psychiatric and neurological populations
+\cite{frackowiak2015future}.
 
 \paragraph{Acknowledgment}
-{\small
+{\small The research leading to these results has received funding from the
+European Union Seventh Framework Programme (FP7/2007-2013)
+under grant agreement no. 604102 (Human Brain Project).
 Data were provided by the Human Connectome Project.
-% The study was supported by the German National Academic Foundation (D.B.).
+Further support was received from
+the German National Academic Foundation (D.B.).
 }
 
 \small
@@ -981,7 +989,7 @@ As the currently biggest openly-accessible reference dataset,
 we chose the Human Connectome Project (HCP) resources
 \cite{barch2013}.
 Neuroimaging task data with labels of ongoing cognitive processes
-were drawn from 500 unrelated,
+were drawn from 500
 healthy HCP participants.
 18 HCP tasks 
 were selected that are known to elicit reliable neural activity
@@ -1034,7 +1042,7 @@ Besides run duration,
 the task acquisitions were identical to the resting-state fMRI acquisitions
 for maximal compatibility between task and rest data.
 We here drew on ``minimally preprocessed'' rest data
-from 200 randomly selected healthy, unrelated participants.
+from 200 randomly selected healthy participants.
 PCA was applied to each set of 1,200 rest maps for
 denoising by keeping only the 20 main modes of
 variation.
@@ -1071,5 +1079,35 @@ a Gaussian kernel of 5mm (FWHM).
 Analogous to HCP data, the second task dataset incorporated 1404
 labeled, grey-matter masked, and z-scored activity maps
 from 18 diverse tasks acquired in 78 participants.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.65\textwidth]{figures/semisup_conversion.png}
+  \vspace{-0.1cm}
+\caption{\textbf{Weight maps of a same hidden factor ranging from
+unsupervised to supervised regime}
+One of the $n$ factors from the hidden layer ($\mathbf{W_0}$)
+was plotted for the same data (full HCP dataset)
+and
+the same model choices
+($n=20, \ell_1=0.1$, $\ell_2=0.1$) along
+a $\lambda$-grid between
+purely unsupervised ($\lambda=0.0$, \textit{top row}) and
+purely supervised ($\lambda=1.0$, \textit{bottom row}) settings.
+%
+As qualitative evidence,
+a slow transition from rest- to task-typical brain networks was observed
+in brain space.
+Although difficult to quantify,
+rest network elements appear to get 'reassembled' to
+latent factors of the LR.
+This increased confidence that the improved model performance
+of rest-informed fLR is not only an arbitrary
+effect of spatially smooth noise.
+%
+All values are z-scored.
+}
+\label{fig_weights_conversion}
+\end{figure}
 
 \end{document}
